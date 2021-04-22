@@ -1,0 +1,10 @@
+((synopsis "SRFI 217: Integer Sets")
+ (category data)
+ (author "John Cowan and Wolfgang Corcoran-Mathe")
+ (license "MIT")
+ (version "0.1")
+ (maintainer "Wolfgang Corcoran-Mathe")
+ (dependencies srfi-1 srfi-143 srfi-145)
+ (test-dependencies srfi-78)
+ (components
+  (extension srfi-217)))
