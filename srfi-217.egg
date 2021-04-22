@@ -5,6 +5,7 @@
  (version "0.1")
  (maintainer "Wolfgang Corcoran-Mathe")
  (dependencies srfi-1 srfi-143 srfi-145)
- (test-dependencies srfi-78)
+ (test-dependencies test)
  (components
-  (extension srfi-217)))
+  (extension srfi-217
+             (csc-options "-O3" "-d0"))))
