@@ -1,6 +1,5 @@
-(import (scheme base)
-        (srfi 217)
-        (chibi test)
+(import (srfi 217)
+        (test)
         (only (srfi 1) iota any every last take-while drop-while count
                        fold filter remove last partition)
         )
@@ -445,3 +444,5 @@
               (isubset>= mixed-set 38))
   (test-assert (iset-empty? (isubset>= mixed-set 50)))
   )
+
+(test-exit)
