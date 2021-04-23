@@ -1,0 +1,4 @@
+(repo git "https://github.com/Zipheir/{egg-name}-chicken.git")
+
+(uri targz "https://github.com/Zipheir/{egg-name}-chicken/archive/{egg-release}.tar.gz")
+(release "0.1")
