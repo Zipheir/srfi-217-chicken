@@ -61,10 +61,12 @@
           (assume (valid-integer? n))
           (lp (trie-insert trie n) (successor seed))))))
 
-;; TODO: Optimize step = 1 case.
+;; The easy and common step = 1 case is optimized, but all other cases
+;; are implemented as unfolds.  This could benefit from more general
+;; tuning.
 (define make-range-iset
   (case-lambda
-    ((start end) (make-range-iset start end 1))  ; TODO: Tune this case.
+    ((start end) (make-range-iset start end 1))
     ((start end step)
      (assume (valid-integer? start))
      (assume (valid-integer? end))
@@ -73,13 +75,15 @@
                  (negative? step)
                  (not (zero? step)))
              "Invalid step value.")
-     (let ((stop? (if (positive? step)
-                      (lambda (i) (>= i end))
-                      (lambda (i) (<= i end)))))
-       (iset-unfold stop?
-                    values
-                    (lambda (i) (+ i step))
-                    start)))))
+     (if (= step 1)
+         (raw-iset (range-trie-step-1 start end))  ; Tuned case.
+         (let ((stop? (if (positive? step)
+                          (lambda (i) (>= i end))
+                          (lambda (i) (<= i end)))))
+           (iset-unfold stop?
+                        values
+                        (lambda (i) (+ i step))
+                        start))))))
 
 ;;;; Predicates
 
