@@ -37,9 +37,12 @@
 
   (import scheme
           (chicken base)
+          (chicken platform)
           (only (srfi 1) fold every)
           (srfi 143)
           (srfi 145))
+
+  (register-feature! 'srfi-217)
 
   ;; R7RS shim
   (define exact inexact->exact)
