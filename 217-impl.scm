@@ -175,7 +175,7 @@
 
 ;; Thanks to the authors of SRFI 146 for providing examples
 ;; of how to implement this shoggoth.
-(: iset-search (iset fixnum procedure procedure -> noreturn))
+(: iset-search (iset fixnum procedure procedure -> iset))
 (define (iset-search set elt failure success)
   (assume (iset? set))
   (assume (valid-integer? elt))
@@ -234,7 +234,7 @@
   (assume (iset? set))
   (trie-size (iset-trie set)))
 
-(: iset-find (iset (fixnum -> *) iset procedure -> *))
+(: iset-find ((fixnum -> *) iset procedure -> *))
 (define (iset-find pred set failure)
   (assume (procedure? failure))
   (call-with-current-continuation

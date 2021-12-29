@@ -123,7 +123,7 @@
 (define (lowest-bit-mask b)
   (fxand b (fxneg b)))
 
-(: highest-bit-mask (fixnum -> fixnum))
+(: highest-bit-mask (fixnum fixnum -> fixnum))
 (define (highest-bit-mask k guess-m)
   (let lp ((x (fxand k (fxnot (fx- guess-m 1)))))
     (let ((m (lowest-bit-mask x)))
@@ -449,7 +449,7 @@
                 (values n (branch p m l r*)))))
         (update/max trie))))
 
-(: trie-search (fixnum procedure procedure --> noreturn))
+(: trie-search (trie fixnum procedure procedure --> noreturn))
 (define (trie-search trie key failure success)
   (let* ((kp (iprefix key))
          (key-leaf (raw-leaf kp (ibitmap key))))
