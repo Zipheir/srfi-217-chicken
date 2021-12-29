@@ -22,16 +22,21 @@
 (define-record-type <iset>
   (raw-iset trie)
   iset?
-  (trie iset-trie))
+  (trie iset-trie : trie))
+
+(define-type iset (struct <iset>))
 
 ;;;; Constructors
 
+(: iset (#!rest fixnum --> iset))
 (define (iset . args)
   (list->iset args))
 
+(: pair-or-null? (* --> boolean))
 (define (pair-or-null? x)
   (or (pair? x) (null? x)))
 
+(: list->iset ((list-of fixnum) --> iset))
 (define (list->iset ns)
   (assume (pair-or-null? ns))
   (raw-iset
@@ -41,6 +46,7 @@
          #f
          ns)))
 
+(: list->iset! (iset (list-of fixnum) --> iset))
 (define (list->iset! set ns)
   (assume (iset? set))
   (assume (pair-or-null? ns))
@@ -50,6 +56,7 @@
                   (iset-trie set)
                   ns)))
 
+(: iset-unfold (procedure procedure procedure * -> iset))
 (define (iset-unfold stop? mapper successor seed)
   (assume (procedure? stop?))
   (assume (procedure? mapper))
@@ -64,6 +71,7 @@
 ;; The easy and common step = 1 case is optimized, but all other cases
 ;; are implemented as unfolds.  This could benefit from more general
 ;; tuning.
+(: make-range-iset (fixnum fixnum #!optional fixnum --> iset))
 (define make-range-iset
   (case-lambda
     ((start end) (make-range-iset start end 1))
@@ -87,15 +95,18 @@
 
 ;;;; Predicates
 
+(: iset-contains? (iset fixnum --> boolean))
 (define (iset-contains? set n)
   (assume (iset? set))
   (assume (valid-integer? n))
   (trie-contains? (iset-trie set) n))
 
+(: iset-empty? (iset --> boolean))
 (define (iset-empty? set)
   (assume (iset? set))
   (not (iset-trie set)))
 
+(: iset-disjoint? (iset iset --> boolean))
 (define (iset-disjoint? set1 set2)
   (assume (iset? set1))
   (assume (iset? set2))
@@ -103,21 +114,25 @@
 
 ;;;; Accessors
 
+(: iset-member (forall (a) (iset fixnum a --> (or fixnum a))))
 (define (iset-member set elt default)
   (if (iset-contains? set elt)
       elt
       default))
 
+(: iset-min (iset --> (or false fixnum)))
 (define (iset-min set)
   (assume (iset? set))
   (trie-min (iset-trie set)))
 
+(: iset-max (iset --> (or false fixnum)))
 (define (iset-max set)
   (assume (iset? set))
   (trie-max (iset-trie set)))
 
 ;;;; Updaters
 
+(: iset-adjoin (iset #!rest fixnum --> iset))
 (define iset-adjoin
   (case-lambda
     ((set n)
@@ -132,9 +147,11 @@
             (iset-trie set)
             ns)))))
 
+(: iset-adjoin! (iset #!rest fixnum --> iset))
 (define (iset-adjoin! set . ns)
   (apply iset-adjoin set ns))
 
+(: iset-delete (iset #!rest fixnum --> iset))
 (define iset-delete
   (case-lambda
     ((set n)
@@ -143,18 +160,22 @@
      (raw-iset (trie-delete (iset-trie set) n)))
     ((set . ns) (iset-delete-all set ns))))
 
+(: iset-delete! (iset #!rest fixnum --> iset))
 (define (iset-delete! set n) (iset-delete set n))
 
+(: iset-delete-all (iset (list-of fixnum) --> iset))
 (define (iset-delete-all set ns)
   (assume (iset? set))
   (assume (or (pair? ns) (null? ns)))
   (iset-difference set (list->iset ns)))
 
+(: iset-delete-all! (iset (list-of fixnum) --> iset))
 (define (iset-delete-all! set ns)
   (iset-delete-all set ns))
 
 ;; Thanks to the authors of SRFI 146 for providing examples
 ;; of how to implement this shoggoth.
+(: iset-search (iset fixnum procedure procedure -> noreturn))
 (define (iset-search set elt failure success)
   (assume (iset? set))
   (assume (valid-integer? elt))
@@ -183,30 +204,37 @@
                         remove)))))
        (values (raw-iset trie) obj)))))
 
+(: iset-search! (iset fixnum procedure procedure -> noreturn))
 (define (iset-search! set elt failure success)
   (iset-search set elt failure success))
 
+(: iset-delete-min (iset --> fixnum iset))
 (define (iset-delete-min set)
   (assume (iset? set))
   (let*-values (((trie) (iset-trie set))
                 ((n trie*) (trie-delete-min trie)))
     (values n (raw-iset trie*))))
 
+(: iset-delete-max (iset --> fixnum iset))
 (define (iset-delete-max set)
   (assume (iset? set))
   (let*-values (((trie) (iset-trie set))
                 ((n trie*) (trie-delete-max trie)))
     (values n (raw-iset trie*))))
 
+(: iset-delete-min! (iset --> fixnum iset))
 (define (iset-delete-min! set) (iset-delete-min set))
+(: iset-delete-max! (iset --> fixnum iset))
 (define (iset-delete-max! set) (iset-delete-max set))
 
 ;;;; The whole iset
 
+(: iset-size (iset --> integer))
 (define (iset-size set)
   (assume (iset? set))
   (trie-size (iset-trie set)))
 
+(: iset-find (iset (fixnum -> *) iset procedure -> *))
 (define (iset-find pred set failure)
   (assume (procedure? failure))
   (call-with-current-continuation
@@ -217,6 +245,7 @@
                     set)
          (failure)))))
 
+(: iset-count ((fixnum -> *) iset -> integer))
 (define (iset-count pred set)
   (assume (procedure? pred))
   (iset-fold (lambda (n acc)
@@ -224,6 +253,7 @@
              0
              set))
 
+(: iset-any? ((fixnum -> *) iset -> boolean))
 (define (iset-any? pred set)
   (assume (procedure? pred))
   (call-with-current-continuation
@@ -233,6 +263,7 @@
                 #f
                 set))))
 
+(: iset-every? ((fixnum -> *) iset -> boolean))
 (define (iset-every? pred set)
   (assume (procedure? pred))
   (call-with-current-continuation
@@ -244,6 +275,7 @@
 
 ;;;; Mapping and folding
 
+(: iset-map ((fixnum -> fixnum) iset -> iset))
 (define (iset-map proc set)
   (assume (procedure? proc))
   (raw-iset
@@ -257,6 +289,7 @@
 (define (unspecified)
   (if #f #f))
 
+(: iset-for-each (procedure iset -> undefined))
 (define (iset-for-each proc set)
   (assume (procedure? proc))
   (iset-fold (lambda (n _)
@@ -265,46 +298,55 @@
              (unspecified)
              set))
 
+(: iset-fold (procedure * iset -> *))
 (define (iset-fold proc nil set)
   (assume (procedure? proc))
   (assume (iset? set))
   (trie-fold proc nil (iset-trie set)))
 
+(: iset-fold-right (procedure * iset -> *))
 (define (iset-fold-right proc nil set)
   (assume (procedure? proc))
   (assume (iset? set))
   (trie-fold-right proc nil (iset-trie set)))
 
+(: iset-filter ((fixnum -> *) iset -> iset))
 (define (iset-filter pred set)
   (assume (procedure? pred))
   (assume (iset? set))
   (raw-iset (trie-filter pred (iset-trie set))))
 
+(: iset-remove ((fixnum -> *) iset -> iset))
 (define (iset-remove pred set)
   (assume (procedure? pred))
   (assume (iset? set))
   (raw-iset (trie-filter (lambda (n) (not (pred n))) (iset-trie set))))
 
+(: iset-partition ((fixnum -> *) iset -> iset iset))
 (define (iset-partition pred set)
   (assume (procedure? pred))
   (assume (iset? set))
   (let-values (((tin tout) (trie-partition pred (iset-trie set))))
     (values (raw-iset tin) (raw-iset tout))))
 
+(: iset-partition! ((fixnum -> *) iset -> iset iset))
 (define (iset-partition! pred set)
   (iset-partition pred set))
 
 ;;;; Copying and conversion
 
+(: iset-copy (iset --> iset))
 (define (iset-copy set)
   (assume (iset? set))
   (raw-iset (copy-trie (iset-trie set))))
 
+(: iset->list (iset --> (list-of fixnum)))
 (define (iset->list set)
   (iset-fold-right cons '() set))
 
 ;;;; Comparison
 
+(: iset=? (iset iset #!rest iset --> boolean))
 (define (iset=? set1 set2 . sets)
   (assume (iset? set1))
   (let ((iset-eq1 (lambda (set)
@@ -315,6 +357,7 @@
          (or (null? sets)
              (every iset-eq1 sets)))))
 
+(: iset<? (iset iset #!rest iset --> boolean))
 (define (iset<? set1 set2 . sets)
   (assume (iset? set1))
   (assume (iset? set2))
@@ -323,6 +366,7 @@
          (or (null? sets)
              (lp t2 (iset-trie (car sets)) (cdr sets))))))
 
+(: iset>? (iset iset #!rest iset --> boolean))
 (define (iset>? set1 set2 . sets)
   (assume (iset? set1))
   (assume (iset? set2))
@@ -331,6 +375,7 @@
          (or (null? sets)
              (lp t2 (iset-trie (car sets)) (cdr sets))))))
 
+(: iset<=? (iset iset #!rest iset --> boolean))
 (define (iset<=? set1 set2 . sets)
   (assume (iset? set1))
   (assume (iset? set2))
@@ -339,6 +384,7 @@
          (or (null? sets)
              (lp t2 (iset-trie (car sets)) (cdr sets))))))
 
+(: iset>=? (iset iset #!rest iset --> boolean))
 (define (iset>=? set1 set2 . sets)
      (assume (iset? set1))
      (assume (iset? set2))
@@ -349,6 +395,7 @@
 
 ;;;; Set theory operations
 
+(: iset-union (iset iset #!rest iset --> iset))
 (define iset-union
   (case-lambda
     ((set1 set2)
@@ -362,9 +409,11 @@
                      (iset-trie set)
                      rest)))))
 
+(: iset-union! (iset iset #!rest iset --> iset))
 (define (iset-union! set . rest)
   (apply iset-union set rest))
 
+(: iset-intersection (iset iset #!rest iset --> iset))
 (define iset-intersection
   (case-lambda
     ((set1 set2)
@@ -379,9 +428,11 @@
                (iset-trie set)
                rest)))))
 
+(: iset-intersection! (iset iset #!rest iset --> iset))
 (define (iset-intersection! set . rest)
   (apply iset-intersection set rest))
 
+(: iset-difference (iset iset #!rest iset --> iset))
 (define iset-difference
   (case-lambda
     ((set1 set2)              ; fast path
@@ -394,9 +445,11 @@
       (trie-difference (iset-trie set)
                        (iset-trie (apply iset-union rest)))))))
 
+(: iset-difference! (iset iset #!rest iset --> iset))
 (define (iset-difference! set . rest)
   (apply iset-difference set rest))
 
+(: iset-xor (iset iset --> iset))
 (define (iset-xor set1 set2)
   (assume (iset? set1))
   (assume (iset? set2))
@@ -405,52 +458,62 @@
       (raw-iset
        (trie-xor (iset-trie set1) (iset-trie set2)))))
 
+(: iset-xor! (iset iset --> iset))
 (define (iset-xor! set1 set2) (iset-xor set1 set2))
 
 ;;;; Subsets
 
+(: isubset= (iset fixnum --> iset))
 (define (isubset= set k)
   (if (iset-contains? set k) (iset k) (iset)))
 
+(: iset-open-interval (iset fixnum fixnum --> iset))
 (define (iset-open-interval set low high)
   (assume (valid-integer? low))
   (assume (valid-integer? high))
   (assume (fx>=? high low))
   (raw-iset (subtrie-interval (iset-trie set) low high #f #f)))
 
+(: iset-closed-interval (iset fixnum fixnum --> iset))
 (define (iset-closed-interval set low high)
   (assume (valid-integer? low))
   (assume (valid-integer? high))
   (assume (fx>=? high low))
   (raw-iset (subtrie-interval (iset-trie set) low high #t #t)))
 
+(: iset-open closed-interval (iset fixnum fixnum --> iset))
 (define (iset-open-closed-interval set low high)
   (assume (valid-integer? low))
   (assume (valid-integer? high))
   (assume (fx>=? high low))
   (raw-iset (subtrie-interval (iset-trie set) low high #f #t)))
 
+(: iset-closed-open-interval (iset fixnum fixnum --> iset))
 (define (iset-closed-open-interval set low high)
   (assume (valid-integer? low))
   (assume (valid-integer? high))
   (assume (fx>=? high low))
   (raw-iset (subtrie-interval (iset-trie set) low high #t #f)))
 
+(: isubset< (iset fixnum --> iset))
 (define (isubset< set k)
   (assume (iset? set))
   (assume (valid-integer? k))
   (raw-iset (subtrie< (iset-trie set) k #f)))
 
+(: isubset<= (iset fixnum --> iset))
 (define (isubset<= set k)
   (assume (iset? set))
   (assume (valid-integer? k))
   (raw-iset (subtrie< (iset-trie set) k #t)))
 
+(: isubset> (iset fixnum --> iset))
 (define (isubset> set k)
   (assume (iset? set))
   (assume (valid-integer? k))
   (raw-iset (subtrie> (iset-trie set) k #f)))
 
+(: isubset>= (iset fixnum --> iset))
 (define (isubset>= set k)
   (assume (iset? set))
   (assume (valid-integer? k))

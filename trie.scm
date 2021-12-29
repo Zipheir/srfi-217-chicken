@@ -60,6 +60,8 @@
   (left branch-left)
   (right branch-right))
 
+(define-type trie (or false (struct <leaf>) (struct <branch>)))
+
 ;; The primary branch constructor creates a branch only if the subtrees
 ;; are non-empty.
 (define (branch prefix mask trie1 trie2)
