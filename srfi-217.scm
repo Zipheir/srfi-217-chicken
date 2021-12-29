@@ -38,9 +38,11 @@
   (import scheme
           (chicken base)
           (chicken platform)
+          (chicken type)
           (only (srfi 1) fold every)
           (srfi 143)
-          (srfi 145))
+          (srfi 145)
+          typed-records)
 
   (register-feature! 'srfi-217)
 
