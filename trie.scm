@@ -449,8 +449,6 @@
                 (values n (branch p m l r*)))))
         (update/max trie))))
 
-;; Search trie for key, and construct a new trie using the results of
-;; failure and success.
 (: trie-search (fixnum procedure procedure --> noreturn))
 (define (trie-search trie key failure success)
   (let* ((kp (iprefix key))
