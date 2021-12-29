@@ -33,11 +33,12 @@
 (define-record-type <leaf>
   (raw-leaf prefix bitmap)
   leaf?
-  (prefix leaf-prefix)
-  (bitmap leaf-bitmap))
+  (prefix leaf-prefix : fixnum)
+  (bitmap leaf-bitmap : fixnum))
 
 ;; The primary leaf constructor creates a leaf only if `bitmap'
 ;; contains at least one value.
+(: leaf (fixnum fixnum --> (or false (struct <leaf>))))
 (define (leaf prefix bitmap)
   (if (fxpositive? bitmap)
       (raw-leaf prefix bitmap)
@@ -52,18 +53,22 @@
        (let ((p (leaf-prefix lf)) (b (leaf-bitmap lf)))
          (let*-leaf binds . body))))))
 
+(define-type trie (or false (struct <leaf>) (struct <branch>)))
+(define-type non-empty-trie (or (struct <leaf>) (struct <branch>)))
+
 (define-record-type <branch>
   (raw-branch prefix branching-bit left right)
   branch?
-  (prefix branch-prefix)
-  (branching-bit branch-branching-bit)
-  (left branch-left)
-  (right branch-right))
-
-(define-type trie (or false (struct <leaf>) (struct <branch>)))
+  (prefix branch-prefix : fixnum)
+  (branching-bit branch-branching-bit : fixnum)
+  (left branch-left : trie)
+  (right branch-right : trie))
+  ;(left branch-left : (or false (struct <leaf>) (struct <branch>)))
+  ;(right branch-right : (or false (struct <leaf>) (struct <branch>))))
 
 ;; The primary branch constructor creates a branch only if the subtrees
 ;; are non-empty.
+(: branch (fixnum fixnum trie trie --> trie))
 (define (branch prefix mask trie1 trie2)
   (cond ((not trie1) trie2)
         ((not trie2) trie1)
@@ -85,32 +90,40 @@
 
 ;; Constant.  Gives the maximum number of integers storable
 ;; in a single leaf.
+(: leaf-bitmap-size fixnum)
 (define leaf-bitmap-size (expt 2 (exact (floor (log fx-width 2)))))
 
+(: suffix-mask fixnum)
 (define suffix-mask (- leaf-bitmap-size 1))
+(: prefix-mask fixnum)
 (define prefix-mask (fxnot suffix-mask))
 
 (define (valid-integer? x) (fixnum? x))
 
 ;; Zero the bits of k at and below (BE) the set bit of m.
+(: mask (fixnum fixnum --> fixnum))
 (define (mask k m)
   (if (fx=? m fx-least)
       0
       (fxand k (fxxor (fxnot (fx- m 1)) m))))
 
 ;; Does the m-masked prefix of k match p?
+(: match-prefix? (fixnum fixnum fixnum --> boolean))
 (define (match-prefix? k p m)
   (fx=? (mask k m) p))
 
+(: branching-bit (fixnum fixnum fixnum fixnum --> fixnum))
 (define (branching-bit p1 m1 p2 m2)
   (if (fxnegative? (fxxor p1 p2))
       fx-least        ; different signs
       (highest-bit-mask (fxxor p1 p2) (fxmax 1 (fx* 2 (fxmax m1 m2))))))
 
 ;; Two's-complement trick.
+(: lowest-bit-mask (fixnum --> fixnum))
 (define (lowest-bit-mask b)
   (fxand b (fxneg b)))
 
+(: highest-bit-mask (fixnum -> fixnum))
 (define (highest-bit-mask k guess-m)
   (let lp ((x (fxand k (fxnot (fx- guess-m 1)))))
     (let ((m (lowest-bit-mask x)))
@@ -119,32 +132,41 @@
           (lp (fx- x m))))))
 
 ;; FIXME: To improve.
+(: highest-set-bit (fixnum --> fixnum))
 (define (highest-set-bit k)
   (fxfirst-set-bit (highest-bit-mask k 1)))
 
+(: zero-bit? (fixnum fixnum --> boolean))
 (define (zero-bit? k m)
   (fxzero? (fxand k m)))
 
+(: isuffix (fixnum --> fixnum))
 (define (isuffix k)
   (fxand k suffix-mask))
 
+(: iprefix (fixnum --> fixnum))
 (define (iprefix k)
   (fxand k prefix-mask))
 
+(: ibitmap (fixnum --> fixnum))
 (define (ibitmap k)
   (fxarithmetic-shift 1 (isuffix k)))
 
+(: bitmap-delete (fixnum fixnum --> fixnum))
 (define (bitmap-delete bitmap key)
   (fxand bitmap (fxnot (ibitmap key))))
 
+(: bitmap-delete-min (fixnum --> fixnum))
 (define (bitmap-delete-min b)
   (fxand b (fxnot (lowest-bit-mask b))))
 
+(: bitmap-delete-max (fixnum --> fixnum))
 (define (bitmap-delete-max b)
   (fxand b (fxnot (highest-bit-mask b (lowest-bit-mask b)))))
 
 ;;;; Predicates and accessors
 
+(: trie-contains? (trie fixnum --> boolean))
 (define (trie-contains? trie key)
   (and trie
        (if (leaf? trie)
@@ -156,6 +178,8 @@
                       (trie-contains? l key)
                       (trie-contains? r key)))))))
 
+;; Assumes that trie is non-empty.
+(: trie-min (trie --> fixnum))
 (define (trie-min trie)
   (letrec
    ((search
@@ -170,6 +194,8 @@
             (search (branch-left trie)))
         (search trie))))
 
+;; Assumes that trie is non-empty.
+(: trie-max (trie --> fixnum))
 (define (trie-max trie)
   (letrec
    ((search
@@ -186,6 +212,7 @@
 
 ;;;; Insert
 
+(: %trie-insert-parts (trie fixnum fixnum --> non-empty-trie))
 (define (%trie-insert-parts trie prefix bitmap)
   (letrec
    ((ins
@@ -205,11 +232,14 @@
                     (%trie-join prefix 0 (raw-leaf prefix bitmap) p m t))))))))
     (ins trie)))
 
+(: trie-insert-full-leaf (trie fixnum --> non-empty-trie))
 (define (trie-insert-full-leaf trie prefix)
   (%trie-insert-parts trie prefix -1))
 
+(: full-bitmap-up-to (fixnum --> fixnum))
 (define (full-bitmap-up-to k) (- (ibitmap k) 1))
 
+(: trie-insert-interval-leaf (trie fixnum fixnum --> non-empty-trie))
 (define (trie-insert-interval-leaf trie low high)
   (assume (fx=? (iprefix low) (iprefix high)))
   (%trie-insert-parts trie
@@ -217,6 +247,7 @@
                       (fxand (full-bitmap-up-to high)
                              (fxnot (full-bitmap-up-to low)))))
 
+(: trie-insert (trie fixnum --> non-empty-trie))
 (define (trie-insert trie key)
   (%trie-insert-parts trie (iprefix key) (ibitmap key)))
 
@@ -224,8 +255,10 @@
 
 ;; Return the greatest (or least) number that can be contained in a
 ;; leaf node with prefix p.
+(: prefix-max (fixnum --> fixnum))
 (define (prefix-max p) (fxior p suffix-mask))
 
+(: range-trie-step-1 (fixnum fixnum --> non-empty-trie))
 (define (range-trie-step-1 low high)
   (let ((p (iprefix low)))
     (if (fx=? p (iprefix high))
@@ -244,6 +277,7 @@
 ;;;; Iterators and filters
 
 ;; Fold trie in increasing numerical order.
+(: trie-fold (procedure * trie -> *))
 (define (trie-fold proc nil trie)
   (letrec
    ((cata
@@ -260,6 +294,7 @@
               (cata (cata nil l) r)))
         (cata nil trie))))
 
+(: fold-left-bits (fixnum procedure * fixnum -> *))
 (define (fold-left-bits prefix proc nil bitmap)
   (let loop ((bm bitmap) (acc nil))
     (if (fxzero? bm)
@@ -269,6 +304,7 @@
           (loop (fxxor bm mask) (proc (fx+ prefix bi) acc))))))
 
 ;; Fold trie in decreasing numerical order.
+(: trie-fold-right (procedure * trie -> *))
 (define (trie-fold-right proc nil trie)
   (letrec
    ((cata
@@ -286,6 +322,7 @@
         (cata nil trie))))
 
 ;; This might benefit from tuning.
+(: fold-right-bits (fixnum procedure * fixnum -> *))
 (define (fold-right-bits prefix proc nil bitmap)
   (let loop ((bm bitmap) (acc nil))
     (if (fxzero? bm)
@@ -294,6 +331,7 @@
                (bi (fxfirst-set-bit mask)))
           (loop (fxxor bm mask) (proc (fx+ prefix bi) acc))))))
 
+(: bitmap-partition ((fixnum -> *) fixnum fixnum -> fixnum fixnum))
 (define (bitmap-partition pred prefix bitmap)
   (let loop ((i 0) (in 0) (out 0))
     (cond ((fx=? i leaf-bitmap-size) (values in out))
@@ -304,6 +342,7 @@
                  (loop (fx+ i 1) in (fxior out bit)))))
           (else (loop (fx+ i 1) in out)))))
 
+(: trie-partition ((fixnum -> *) trie -> trie trie))
 (define (trie-partition pred trie)
   (letrec
    ((part
@@ -321,6 +360,7 @@
                 (values (branch p m il ir) (branch p m ol or))))))))
     (part trie)))
 
+(: bitmap-filter ((fixnum -> *) fixnum fixnum -> fixnum))
 (define (bitmap-filter pred prefix bitmap)
   (let loop ((i 0) (res 0))
     (cond ((fx=? i leaf-bitmap-size) res)
@@ -328,6 +368,7 @@
            (loop (fx+ i 1) (fxior res (fxarithmetic-shift 1 i))))
           (else (loop (fx+ i 1) res)))))
 
+(: trie-filter ((fixnum -> *) trie -> trie))
 (define (trie-filter pred trie)
   (cond ((not trie) #f)
         ((leaf? trie)
@@ -341,6 +382,7 @@
 
 ;;;; Update operations
 
+(: trie-delete (trie fixnum --> trie))
 (define (trie-delete trie key)
   (letrec*
    ((prefix (iprefix key))
@@ -361,6 +403,7 @@
                     t)))))))
     (update trie)))
 
+(: trie-delete-min (trie --> fixnum trie))
 (define (trie-delete-min trie)
   (letrec
    ((update/min
@@ -383,6 +426,7 @@
                 (values n (branch p m l* r)))))
         (update/min trie))))
 
+(: trie-delete-max (trie --> fixnum trie))
 (define (trie-delete-max trie)
   (letrec
    ((update/max
@@ -407,6 +451,7 @@
 
 ;; Search trie for key, and construct a new trie using the results of
 ;; failure and success.
+(: trie-search (fixnum procedure procedure --> noreturn))
 (define (trie-search trie key failure success)
   (let* ((kp (iprefix key))
          (key-leaf (raw-leaf kp (ibitmap key))))
@@ -441,6 +486,8 @@
                 (search trie values)))
           (search trie values)))))
 
+(: leaf-search
+   ((struct <leaf>) fixnum procedure procedure procedure -> noreturn))
 (define (leaf-search lf key failure success build)
   (let ((kp (iprefix key)) (kb (ibitmap key)))
     (let*-leaf (((p bm) lf))
@@ -462,12 +509,15 @@
 
 ;;;; Set-theoretical operations
 
+(: %trie-join
+   (fixnum fixnum trie fixnum fixnum trie --> (struct <branch>)))
 (define (%trie-join prefix1 mask1 trie1 prefix2 mask2 trie2)
   (let ((m (branching-bit prefix1 mask1 prefix2 mask2)))
     (if (zero-bit? prefix1 m)
         (raw-branch (mask prefix1 m) m trie1 trie2)
         (raw-branch (mask prefix1 m) m trie2 trie1))))
 
+(: branching-bit-higher? (fixnum fixnum --> boolean))
 (define (branching-bit-higher? mask1 mask2)
   (if (negative? (fxxor mask1 mask2))  ; signs differ
       (negative? mask1)
@@ -477,6 +527,7 @@
 ;; `insert-leaf' function, which is used to merge leaves into branches.
 ;; Taking the running time of `insert-leaf' to be constant, runs in
 ;; O(n+m) time.
+(: %trie-merge ((trie (struct <leaf>) --> trie) trie trie -> trie))
 (define (%trie-merge insert-leaf trie1 trie2)
   (letrec
     ((merge
@@ -507,11 +558,13 @@
                  (%trie-join p m s q n t)))))))
     (merge trie1 trie2)))
 
+(: trie-union (trie trie -> trie))
 (define (trie-union trie1 trie2)
   (%trie-merge (lambda (s t) (insert-leaf/proc fxior s t))
                trie1
                trie2))
 
+(: trie-xor (trie trie -> trie))
 (define (trie-xor trie1 trie2)
   (%trie-merge (lambda (s t) (insert-leaf/proc fxxor s t))
                trie1
@@ -519,6 +572,8 @@
 
 ;; Insert the elements of `lf' into `trie', combining bitmaps with
 ;; the binary bitwise operation `fxcombine'.
+(: insert-leaf/proc
+   ((fixnum fixnum --> fixnum) trie (struct <leaf>) --> trie))
 (define (insert-leaf/proc fxcombine trie lf)
   (let*-leaf (((p bm) lf))
     (letrec
@@ -541,6 +596,7 @@
 
 ;; Construct a trie which forms the intersection of the two tries.
 ;; Runs in O(n+m) time.
+(: trie-intersection (trie trie --> trie))
 (define (trie-intersection trie1 trie2)
   (letrec
    ((intersect
@@ -583,6 +639,7 @@
 
 ;; Construct a trie containing the elements of trie1 not found in trie2.
 ;; Runs in O(n+m) time.
+(: trie-difference (trie trie --> trie))
 (define (trie-difference trie1 trie2)
   (letrec
    ((difference
@@ -625,6 +682,7 @@
     (difference trie1 trie2)))
 
 ;; Delete all values described by `bitmap' from `trie'.
+(: %trie-delete-bitmap (trie fixnum fixnum --> trie))
 (define (%trie-delete-bitmap trie prefix bitmap)
   (cond ((not trie) #f)
         ((leaf? trie)
@@ -641,6 +699,7 @@
 
 ;;;; Copying
 
+(: copy-trie (trie --> trie))
 (define (copy-trie trie)
   (cond ((not trie) #f)
         ((leaf? trie) (raw-leaf (leaf-prefix trie) (leaf-bitmap trie)))
@@ -652,6 +711,7 @@
 
 ;;;; Size
 
+(: trie-size (trie --> integer))
 (define (trie-size trie)
   (let accum ((siz 0) (t trie))
     (cond ((not t) siz)
@@ -661,6 +721,7 @@
 
 ;;;; Comparisons
 
+(: trie=? (trie trie --> boolean))
 (define (trie=? trie1 trie2)
   (cond ((not (or trie1 trie2)) #t)
         ((and (leaf? trie1) (leaf? trie2))
@@ -671,6 +732,7 @@
            (and (fx=? m n) (fx=? p q) (trie=? l1 l2) (trie=? r1 r2))))
         (else #f)))
 
+(: subset-compare-leaves ((struct <leaf>) (struct <leaf>) --> symbol))
 (define (subset-compare-leaves l1 l2)
   (let*-leaf (((p b) l1) ((q c) l2))
     (if (fx=? p q)
@@ -686,6 +748,7 @@
 ;; disjoint sets will compare as greater.
 ;;
 ;; FIXME: Simplify this.
+(: trie-subset-compare (trie trie --> symbol))
 (define (trie-subset-compare trie1 trie2)
   (letrec
    ((compare
@@ -725,9 +788,11 @@
                (else 'greater))))))  ; disjoint
     (compare trie1 trie2)))
 
+(: trie-proper-subset? (trie trie --> boolean))
 (define (trie-proper-subset? trie1 trie2)
   (eqv? (trie-subset-compare trie1 trie2) 'less))
 
+(: trie-disjoint? (trie trie -> boolean))
 (define (trie-disjoint? trie1 trie2)
   (letrec
    ((disjoint?
@@ -772,6 +837,7 @@
 ;; less than k, if `inclusive' is false, or less than or equal to
 ;; k if `inclusive' is true.
 ;; Runs in O(min(n, W)) time.
+(: subtrie< (trie fixnum boolean --> trie))
 (define (subtrie< trie k inclusive)
   (letrec
     ((split
@@ -795,6 +861,7 @@
 
 ;; Return a bitmap containing all elements in `bitmap' that are
 ;; less than/less than or equal to k.
+(: bitmap-split< (fixnum boolean fixnum fixnum --> fixnum))
 (define (bitmap-split< k inclusive prefix bitmap)
   (let ((kp (iprefix k)) (kb (ibitmap k)))
     (cond ((fx>? kp prefix) bitmap)
@@ -810,6 +877,7 @@
 ;; greater than k, if `inclusive' is false, or greater than or equal
 ;; to k if `inclusive' is true.
 ;; Runs in O(min(n, W)) time.
+(: subtrie> (trie fixnum boolean --> trie))
 (define (subtrie> trie k inclusive)
   (letrec
    ((split
@@ -833,6 +901,7 @@
 
 ;; Return a bitmap containing all elements in `bitmap' that are
 ;; greater than/greater than or equal to `k'.
+(: bitmap-split> (fixnum boolean fixnum fixnum --> fixnum))
 (define (bitmap-split> k inclusive prefix bitmap)
   (let ((kp (iprefix k)) (kb (ibitmap k)))
     (cond ((fx<? kp prefix) bitmap)
@@ -847,6 +916,7 @@
 ;; greater than/greater than or equal to a and less than/less than
 ;; or equal to b, depending on the truth values of
 ;; low-/high-inclusive.
+(: subtrie-interval (trie fixnum fixnum boolean boolean --> trie))
 (define (subtrie-interval trie a b low-inclusive high-inclusive)
   (letrec
    ((interval
@@ -886,6 +956,8 @@
 
 ;; Return a bitmap containing the elements of bitmap that are within
 ;; the interval defined by a, b.
+(: bitmap-interval
+   (fixnum fixnum fixnum fixnum boolean boolean -> fixnum))
 (define (bitmap-interval prefix bitmap low high low-inclusive high-inclusive)
   (let ((lp (iprefix low))
         (lb (ibitmap low))
