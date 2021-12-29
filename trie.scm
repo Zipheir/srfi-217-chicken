@@ -525,7 +525,7 @@
 ;; `insert-leaf' function, which is used to merge leaves into branches.
 ;; Taking the running time of `insert-leaf' to be constant, runs in
 ;; O(n+m) time.
-(: %trie-merge ((trie (struct <leaf>) --> trie) trie trie -> trie))
+(: %trie-merge ((trie (struct <leaf>) -> trie) trie trie -> trie))
 (define (%trie-merge insert-leaf trie1 trie2)
   (letrec
     ((merge
@@ -571,7 +571,7 @@
 ;; Insert the elements of `lf' into `trie', combining bitmaps with
 ;; the binary bitwise operation `fxcombine'.
 (: insert-leaf/proc
-   ((fixnum fixnum --> fixnum) trie (struct <leaf>) --> trie))
+   ((fixnum fixnum -> fixnum) trie (struct <leaf>) -> trie))
 (define (insert-leaf/proc fxcombine trie lf)
   (let*-leaf (((p bm) lf))
     (letrec

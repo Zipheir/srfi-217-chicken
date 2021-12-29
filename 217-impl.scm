@@ -481,7 +481,7 @@
   (assume (fx>=? high low))
   (raw-iset (subtrie-interval (iset-trie set) low high #t #t)))
 
-(: iset-open closed-interval (iset fixnum fixnum --> iset))
+(: iset-open-closed-interval (iset fixnum fixnum --> iset))
 (define (iset-open-closed-interval set low high)
   (assume (valid-integer? low))
   (assume (valid-integer? high))
