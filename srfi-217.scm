@@ -41,13 +41,18 @@
           (chicken type)
           (only (srfi 1) fold every)
           (srfi 143)
-          (srfi 145)
           typed-records)
 
   (register-feature! 'srfi-217)
 
   ;; R7RS shim
   (define exact inexact->exact)
+
+  ;; SRFI 145 shim
+  (define-syntax assume
+    (syntax-rules ()
+      ((assume . args)
+       (assert . args))))
 
   (include "trie.scm")
   (include "217-impl.scm"))

@@ -4,7 +4,7 @@
  (license "MIT")
  (version "0.1")
  (maintainer "Wolfgang Corcoran-Mathe")
- (dependencies srfi-1 srfi-143 srfi-145 typed-records)
+ (dependencies srfi-1 srfi-143 typed-records)
  (test-dependencies test)
  (components
   (extension srfi-217
