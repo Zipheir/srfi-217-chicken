@@ -232,47 +232,9 @@
                     (%trie-join prefix 0 (raw-leaf prefix bitmap) p m t))))))))
     (ins trie)))
 
-(: trie-insert-full-leaf (trie fixnum --> non-empty-trie))
-(define (trie-insert-full-leaf trie prefix)
-  (%trie-insert-parts trie prefix -1))
-
-(: full-bitmap-up-to (fixnum --> fixnum))
-(define (full-bitmap-up-to k) (- (ibitmap k) 1))
-
-(: trie-insert-interval-leaf (trie fixnum fixnum --> non-empty-trie))
-(define (trie-insert-interval-leaf trie low high)
-  (assume (fx=? (iprefix low) (iprefix high)))
-  (%trie-insert-parts trie
-                      (iprefix low)
-                      (fxand (full-bitmap-up-to high)
-                             (fxnot (full-bitmap-up-to low)))))
-
 (: trie-insert (trie fixnum --> non-empty-trie))
 (define (trie-insert trie key)
   (%trie-insert-parts trie (iprefix key) (ibitmap key)))
-
-;;;; Range trie constructor
-
-;; Return the greatest (or least) number that can be contained in a
-;; leaf node with prefix p.
-(: prefix-max (fixnum --> fixnum))
-(define (prefix-max p) (fxior p suffix-mask))
-
-(: range-trie-step-1 (fixnum fixnum --> non-empty-trie))
-(define (range-trie-step-1 low high)
-  (let ((p (iprefix low)))
-    (if (fx=? p (iprefix high))
-        (trie-insert-interval-leaf #f low high)
-        (let* ((pm (prefix-max p)) (k (fx+ pm 1)))
-          (let loop ((t (trie-insert-interval-leaf #f low pm))
-                     (k k)
-                     (m (prefix-max k)))
-            (if (fx>=? m high)
-                (trie-insert-interval-leaf t k high)  ; remaining elements
-                (let ((p (iprefix k)) (m* (fx+ m 1)))
-                  (loop (trie-insert-full-leaf t p)
-                        m*
-                        (prefix-max (iprefix m*))))))))))
 
 ;;;; Iterators and filters
 

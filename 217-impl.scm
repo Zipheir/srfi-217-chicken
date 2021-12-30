@@ -83,15 +83,13 @@
                  (negative? step)
                  (not (zero? step)))
              "Invalid step value.")
-     (if (= step 1)
-         (raw-iset (range-trie-step-1 start end))  ; Tuned case.
-         (let ((stop? (if (positive? step)
-                          (lambda (i) (>= i end))
-                          (lambda (i) (<= i end)))))
-           (iset-unfold stop?
-                        values
-                        (lambda (i) (+ i step))
-                        start))))))
+     (let ((stop? (if (positive? step)
+                      (lambda (i) (>= i end))
+                      (lambda (i) (<= i end)))))
+       (iset-unfold stop?
+                    values
+                    (lambda (i) (+ i step))
+                    start)))))
 
 ;;;; Predicates
 
