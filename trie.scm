@@ -449,7 +449,7 @@
                 (values n (branch p m l r*)))))
         (update/max trie))))
 
-(: trie-search (trie fixnum procedure procedure --> noreturn))
+(: trie-search (trie fixnum procedure procedure --> trie *))
 (define (trie-search trie key failure success)
   (let* ((kp (iprefix key))
          (key-leaf (raw-leaf kp (ibitmap key))))
