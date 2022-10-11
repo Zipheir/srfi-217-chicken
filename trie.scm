@@ -30,6 +30,7 @@
 ;;; invariant: Every leaf and every subtrie contains at least one value.
 ;;; This means that the empty trie (#f) never appears as a subtrie.
 
+(module (srfi 217 internal)
 (define-record-type <leaf>
   (raw-leaf prefix bitmap)
   leaf?
@@ -458,7 +459,8 @@
                        (lambda (obj) (build lf obj)))
               (success key
                        (lambda (elt obj)
-                         (assume (eqv? key elt) "invalid new element")
+                         (unless (eqv? key elt)  ; FIXME?
+                           (error 'iset-search "invalid new element" elt))
                          (build lf obj))
                        (lambda (obj)
                          (build (leaf p (bitmap-delete bm key)) obj))))

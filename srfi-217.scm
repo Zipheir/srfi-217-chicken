@@ -49,11 +49,5 @@
   ;; R7RS shim
   (define exact inexact->exact)
 
-  ;; SRFI 145 shim
-  (define-syntax assume
-    (syntax-rules ()
-      ((assume . args)
-       (assert . args))))
-
   (include "trie.scm")
   (include "217-impl.scm"))
