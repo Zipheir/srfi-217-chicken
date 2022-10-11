@@ -288,17 +288,14 @@
               #f
               set)))
 
-(define (unspecified)
-  (if #f #f))
-
 (: iset-for-each (procedure iset -> undefined))
 (define (iset-for-each proc set)
   (assert-type 'iset-for-each (procedure? proc))
   (assert-type 'iset-for-each? (iset? set))
   (iset-fold (lambda (n _)
                (proc n)
-               (unspecified))
-             (unspecified)
+               (void))
+             (void)
              set))
 
 (: iset-fold (procedure * iset -> *))
