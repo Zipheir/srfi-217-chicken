@@ -11,5 +11,4 @@
    (types-file)
    (csc-options "-O3" "-d1"))
   (extension srfi-217
-             (types-file)
-             (csc-options "-O3" "-d1"))))
+   (types-file))))
