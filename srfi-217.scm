@@ -37,6 +37,7 @@
 
   (import scheme
           (chicken base)
+          (chicken condition)
           (chicken platform)
           (chicken type)
           (only (srfi 1) fold every)
