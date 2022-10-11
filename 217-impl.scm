@@ -249,10 +249,10 @@
 (define (iset-count pred set)
   (assert-type 'iset-count (procedure? pred))
   (assert-type 'iset-count (iset? set))
-  (iset-fold (lambda (n acc)
+  (trie-fold (lambda (n acc)
                (if (pred n) (+ 1 acc) acc))
              0
-             set))
+             (iset-trie set)))
 
 (: iset-any? ((fixnum -> *) iset -> boolean))
 (define (iset-any? pred set)
