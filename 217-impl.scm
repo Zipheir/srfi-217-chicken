@@ -239,10 +239,10 @@
   (assert-type 'iset-find (procedure? failure))
   (call-with-current-continuation
    (lambda (return)
-     (or (iset-fold (lambda (n _)
+     (or (trie-fold (lambda (n _)
                       (and (pred n) (return n)))
                     #f
-                    set)
+                    (iset-trie set))
          (failure)))))
 
 (: iset-count ((fixnum -> *) iset -> integer))
@@ -260,10 +260,10 @@
   (assert-type 'iset-any? (iset? set))
   (call-with-current-continuation
    (lambda (return)
-     (iset-fold (lambda (n _)
+     (trie-fold (lambda (n _)
                   (and (pred n) (return #t)))
                 #f
-                set))))
+                (iset-trie set)))))
 
 (: iset-every? ((fixnum -> *) iset -> boolean))
 (define (iset-every? pred set)
@@ -271,10 +271,10 @@
   (assert-type 'iset-every? (iset? set))
   (call-with-current-continuation
    (lambda (return)
-     (iset-fold (lambda (n _)
+     (trie-fold (lambda (n _)
                   (or (pred n) (return #f)))
                 #t
-                set))))
+                (iset-trie set)))))
 
 ;;;; Mapping and folding
 
@@ -283,12 +283,12 @@
   (assert-type 'iset-map (procedure? proc))
   (assert-type 'iset-map? (iset? set))
   (raw-iset
-   (iset-fold (lambda (n t)
+   (trie-fold (lambda (n t)
                 (let ((n* (proc n)))
                   (assert-type 'iset-map (fixnum? n*))
                   (trie-insert t (proc n))))
               #f
-              set)))
+              (iset-trie set))))
 
 (: iset-for-each (procedure iset -> undefined))
 (define (iset-for-each proc set)
@@ -345,7 +345,7 @@
 (: iset->list (iset --> (list-of fixnum)))
 (define (iset->list set)
   (assert-type 'iset->list (iset? set))
-  (iset-fold-right cons '() set))
+  (trie-fold-right cons '() (iset-trie set)))
 
 ;;;; Comparison
 
