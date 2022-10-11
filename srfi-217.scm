@@ -49,4 +49,5 @@
   ;; Internal sublibrary
   (import (srfi 217 internal))
 
+  (include "exceptions.scm")
   (include "217-impl.scm"))
