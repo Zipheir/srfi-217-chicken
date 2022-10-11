@@ -46,9 +46,6 @@
 
   (register-feature! 'srfi-217)
 
-  ;; R7RS shim
-  (define exact inexact->exact)
-
   ;; Internal sublibrary
   (import (srfi 217 internal))
 

@@ -107,7 +107,8 @@
 ;; Constant.  Gives the maximum number of integers storable
 ;; in a single leaf.
 (: leaf-bitmap-size fixnum)
-(define leaf-bitmap-size (expt 2 (exact (floor (log fx-width 2)))))
+(define leaf-bitmap-size
+  (expt 2 (inexact->exact (floor (log fx-width 2)))))
 
 (: suffix-mask fixnum)
 (define suffix-mask (- leaf-bitmap-size 1))
