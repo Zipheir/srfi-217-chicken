@@ -41,7 +41,7 @@
   (assert-type 'list->iset (pair-or-null? ns))
   (raw-iset
    (fold (lambda (n t)
-           (assert-type 'list->iset (valid-integer? n))
+           (assert-type 'list->iset (fixnum? n))
            (trie-insert t n))
          #f
          ns)))
@@ -51,7 +51,7 @@
   (assert-type 'list->iset! (iset? set))
   (assert-type 'list->iset! (pair-or-null? ns))
   (raw-iset (fold (lambda (n t)
-                    (assert-type 'list->iset! (valid-integer? n))
+                    (assert-type 'list->iset! (fixnum? n))
                     (trie-insert t n))
                   (iset-trie set)
                   ns)))
@@ -65,7 +65,7 @@
     (if (stop? seed)
         (raw-iset trie)
         (let ((n (mapper seed)))
-          (assert-type 'iset-unfold (valid-integer? n))
+          (assert-type 'iset-unfold (fixnum? n))
           (lp (trie-insert trie n) (successor seed))))))
 
 ;; The easy and common step = 1 case is optimized, but all other cases
@@ -76,9 +76,9 @@
   (case-lambda
     ((start end) (make-range-iset start end 1))
     ((start end step)
-     (assert-type 'make-range-iset (valid-integer? start))
-     (assert-type 'make-range-iset (valid-integer? end))
-     (assert-type 'make-range-iset (valid-integer? step))
+     (assert-type 'make-range-iset (fixnum? start))
+     (assert-type 'make-range-iset (fixnum? end))
+     (assert-type 'make-range-iset (fixnum? step))
      (unless (if (< end start)
                  (negative? step)
                  (not (zero? step)))
@@ -96,7 +96,7 @@
 (: iset-contains? (iset fixnum --> boolean))
 (define (iset-contains? set n)
   (assert-type 'iset-contains? (iset? set))
-  (assert-type 'iset-contains? (valid-integer? n))
+  (assert-type 'iset-contains? (fixnum? n))
   (trie-contains? (iset-trie set) n))
 
 (: iset-empty? (iset --> boolean))
@@ -135,12 +135,12 @@
   (case-lambda
     ((set n)
      (assert-type 'iset-adjoin (iset? set))
-     (assert-type 'iset-adjoin (valid-integer? n))
+     (assert-type 'iset-adjoin (fixnum? n))
      (raw-iset (trie-insert (iset-trie set) n)))
     ((set . ns)
      (raw-iset
       (fold (lambda (n t)
-              (assert-type 'iset-adjoin (valid-integer? n))
+              (assert-type 'iset-adjoin (fixnum? n))
               (trie-insert t n))
             (iset-trie set)
             ns)))))
@@ -154,7 +154,7 @@
   (case-lambda
     ((set n)
      (assert-type 'iset-delete (iset? set))
-     (assert-type 'iset-delete (valid-integer? n))
+     (assert-type 'iset-delete (fixnum? n))
      (raw-iset (trie-delete (iset-trie set) n)))
     ((set . ns) (iset-delete-all set ns))))
 
@@ -176,7 +176,7 @@
 (: iset-search (iset fixnum procedure procedure -> iset *))
 (define (iset-search set elt failure success)
   (assert-type 'iset-search (iset? set))
-  (assert-type 'iset-search (valid-integer? elt))
+  (assert-type 'iset-search (fixnum? elt))
   (assert-type 'iset-search (procedure? failure))
   (assert-type 'iset-search (procedure? success))
   (call-with-current-continuation
@@ -193,7 +193,7 @@
                        (success
                         key
                         (lambda (new obj)
-                          (assert-type 'iset-search (valid-integer? new))
+                          (assert-type 'iset-search (fixnum? new))
                           (if (fx=? key new)
                               (update new obj)
                               (return (iset-adjoin (iset-delete set key)
@@ -283,7 +283,7 @@
   (raw-iset
    (iset-fold (lambda (n t)
                 (let ((n* (proc n)))
-                  (assert-type 'iset-map (valid-integer? n*))
+                  (assert-type 'iset-map (fixnum? n*))
                   (trie-insert t (proc n))))
               #f
               set)))
@@ -473,52 +473,52 @@
 
 (: iset-open-interval (iset fixnum fixnum --> iset))
 (define (iset-open-interval set low high)
-  (assert-type 'iset-open-interval (valid-integer? low))
-  (assert-type 'iset-open-interval (valid-integer? high))
+  (assert-type 'iset-open-interval (fixnum? low))
+  (assert-type 'iset-open-interval (fixnum? high))
   (assert-type 'iset-open-interval (fx>=? high low))
   (raw-iset (subtrie-interval (iset-trie set) low high #f #f)))
 
 (: iset-closed-interval (iset fixnum fixnum --> iset))
 (define (iset-closed-interval set low high)
-  (assert-type 'iset-closed-interval (valid-integer? low))
-  (assert-type 'iset-closed-interval (valid-integer? high))
+  (assert-type 'iset-closed-interval (fixnum? low))
+  (assert-type 'iset-closed-interval (fixnum? high))
   (assert-type 'iset-closed-interval (fx>=? high low))
   (raw-iset (subtrie-interval (iset-trie set) low high #t #t)))
 
 (: iset-open-closed-interval (iset fixnum fixnum --> iset))
 (define (iset-open-closed-interval set low high)
-  (assert-type 'iset-open-closed-interval (valid-integer? low))
-  (assert-type 'iset-open-closed-interval (valid-integer? high))
+  (assert-type 'iset-open-closed-interval (fixnum? low))
+  (assert-type 'iset-open-closed-interval (fixnum? high))
   (assert-type 'iset-open-closed-interval (fx>=? high low))
   (raw-iset (subtrie-interval (iset-trie set) low high #f #t)))
 
 (: iset-closed-open-interval (iset fixnum fixnum --> iset))
 (define (iset-closed-open-interval set low high)
-  (assert-type 'iset-closed-open-interval (valid-integer? low))
-  (assert-type 'iset-closed-open-interval (valid-integer? high))
+  (assert-type 'iset-closed-open-interval (fixnum? low))
+  (assert-type 'iset-closed-open-interval (fixnum? high))
   (assert-type 'iset-closed-open-interval (fx>=? high low))
   (raw-iset (subtrie-interval (iset-trie set) low high #t #f)))
 
 (: isubset< (iset fixnum --> iset))
 (define (isubset< set k)
   (assert-type 'isubset< (iset? set))
-  (assert-type 'isubset< (valid-integer? k))
+  (assert-type 'isubset< (fixnum? k))
   (raw-iset (subtrie< (iset-trie set) k #f)))
 
 (: isubset<= (iset fixnum --> iset))
 (define (isubset<= set k)
   (assert-type 'isubset<= (iset? set))
-  (assert-type 'isubset<= (valid-integer? k))
+  (assert-type 'isubset<= (fixnum? k))
   (raw-iset (subtrie< (iset-trie set) k #t)))
 
 (: isubset> (iset fixnum --> iset))
 (define (isubset> set k)
   (assert-type 'isubset> (iset? set))
-  (assert-type 'isubset> (valid-integer? k))
+  (assert-type 'isubset> (fixnum? k))
   (raw-iset (subtrie> (iset-trie set) k #f)))
 
 (: isubset>= (iset fixnum --> iset))
 (define (isubset>= set k)
   (assert-type 'isubset>= (iset? set))
-  (assert-type 'isubset>= (valid-integer? k))
+  (assert-type 'isubset>= (fixnum? k))
   (raw-iset (subtrie> (iset-trie set) k #t)))
