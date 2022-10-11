@@ -49,5 +49,7 @@
   ;; R7RS shim
   (define exact inexact->exact)
 
-  (include "trie.scm")
+  ;; Internal sublibrary
+  (import (srfi 217 internal))
+
   (include "217-impl.scm"))
