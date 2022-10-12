@@ -1,4 +1,5 @@
-(import (srfi 217)
+(import (chicken base)
+        (srfi 217)
         (test)
         (only (srfi 1) iota any every last take-while drop-while count
                        fold filter remove last partition)
@@ -10,9 +11,6 @@
   (if (null? (cdr xs))
       '()
       (cons (car xs) (init (cdr xs)))))
-
-(define (constantly x)
-  (lambda (_) x))
 
 (define pos-seq (iota 20 100 3))
 (define neg-seq (iota 20 -100 3))
