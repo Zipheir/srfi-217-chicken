@@ -1,6 +1,10 @@
 (import (chicken base)
+        (chicken fixnum)
+        (rename (chicken random) (pseudo-random-integer random-int))
+        (chicken syntax)
         (srfi 217)
         (test)
+        test-generative
         (only (srfi 1) iota any every last take-while drop-while count
                        fold filter remove last partition)
         )
@@ -26,6 +30,32 @@
 
 (define all-test-sets
   (list pos-set neg-set mixed-set dense-set sparse-set))
+
+(define test-iset-size-bound 128)
+
+;; Return an iset of random size containing random fixnums.
+;; FIXME: Find a saner way to generate random integers in the
+;; full fixnum range.
+(define (random-iset)
+  (let ((size (random-int test-iset-size-bound)))
+    (iset-unfold (cut >= <> size)
+                 (lambda (_i)
+                   (let ((neg (random-int 2))
+                         (k (random-int most-positive-fixnum)))
+                     (if (zero? neg)
+                         k
+                         (- k))))
+                 add1
+                 0)))
+
+;; Use test-generative to bind a list of names to random isets
+;; over a bunch of test expressions.
+(define-syntax test-with-random-isets
+  (ir-macro-transformer
+   (lambda (exp _inj _same?)
+     `(test-generative ,(map (lambda (v) (list v 'random-iset))
+                             (cadr exp))
+        ,@(cddr exp)))))
 
 ;; Most other test groups use iset=?, so test this first.
 (test-group "iset=?"
