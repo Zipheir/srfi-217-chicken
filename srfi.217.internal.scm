@@ -54,7 +54,7 @@
 
 ;; The primary leaf constructor creates a leaf only if `bitmap'
 ;; contains at least one value.
-(: leaf (fixnum fixnum --> (or false (struct <leaf>))))
+(: leaf (fixnum fixnum -> (or false (struct <leaf>))))
 (define (leaf prefix bitmap)
   (if (fxpositive? bitmap)
       (raw-leaf prefix bitmap)
@@ -84,7 +84,7 @@
 
 ;; The primary branch constructor creates a branch only if the subtrees
 ;; are non-empty.
-(: branch (fixnum fixnum trie trie --> trie))
+(: branch (fixnum fixnum trie trie -> trie))
 (define (branch prefix mask trie1 trie2)
   (cond ((not trie1) trie2)
         ((not trie2) trie1)
@@ -118,25 +118,25 @@
 (define (valid-integer? x) (fixnum? x))
 
 ;; Zero the bits of k at and below (BE) the set bit of m.
-(: mask (fixnum fixnum --> fixnum))
+(: mask (fixnum fixnum -> fixnum))
 (define (mask k m)
   (if (fx=? m fx-least)
       0
       (fxand k (fxxor (fxnot (fx- m 1)) m))))
 
 ;; Does the m-masked prefix of k match p?
-(: match-prefix? (fixnum fixnum fixnum --> boolean))
+(: match-prefix? (fixnum fixnum fixnum -> boolean))
 (define (match-prefix? k p m)
   (fx=? (mask k m) p))
 
-(: branching-bit (fixnum fixnum fixnum fixnum --> fixnum))
+(: branching-bit (fixnum fixnum fixnum fixnum -> fixnum))
 (define (branching-bit p1 m1 p2 m2)
   (if (fxnegative? (fxxor p1 p2))
       fx-least        ; different signs
       (highest-bit-mask (fxxor p1 p2) (fxmax 1 (fx* 2 (fxmax m1 m2))))))
 
 ;; Two's-complement trick.
-(: lowest-bit-mask (fixnum --> fixnum))
+(: lowest-bit-mask (fixnum -> fixnum))
 (define (lowest-bit-mask b)
   (fxand b (fxneg b)))
 
@@ -149,41 +149,41 @@
           (lp (fx- x m))))))
 
 ;; FIXME: To improve.
-(: highest-set-bit (fixnum --> fixnum))
+(: highest-set-bit (fixnum -> fixnum))
 (define (highest-set-bit k)
   (fxfirst-set-bit (highest-bit-mask k 1)))
 
-(: zero-bit? (fixnum fixnum --> boolean))
+(: zero-bit? (fixnum fixnum -> boolean))
 (define (zero-bit? k m)
   (fxzero? (fxand k m)))
 
-(: isuffix (fixnum --> fixnum))
+(: isuffix (fixnum -> fixnum))
 (define (isuffix k)
   (fxand k suffix-mask))
 
-(: iprefix (fixnum --> fixnum))
+(: iprefix (fixnum -> fixnum))
 (define (iprefix k)
   (fxand k prefix-mask))
 
-(: ibitmap (fixnum --> fixnum))
+(: ibitmap (fixnum -> fixnum))
 (define (ibitmap k)
   (fxarithmetic-shift 1 (isuffix k)))
 
-(: bitmap-delete (fixnum fixnum --> fixnum))
+(: bitmap-delete (fixnum fixnum -> fixnum))
 (define (bitmap-delete bitmap key)
   (fxand bitmap (fxnot (ibitmap key))))
 
-(: bitmap-delete-min (fixnum --> fixnum))
+(: bitmap-delete-min (fixnum -> fixnum))
 (define (bitmap-delete-min b)
   (fxand b (fxnot (lowest-bit-mask b))))
 
-(: bitmap-delete-max (fixnum --> fixnum))
+(: bitmap-delete-max (fixnum -> fixnum))
 (define (bitmap-delete-max b)
   (fxand b (fxnot (highest-bit-mask b (lowest-bit-mask b)))))
 
 ;;;; Predicates and accessors
 
-(: trie-contains? (trie fixnum --> boolean))
+(: trie-contains? (trie fixnum -> boolean))
 (define (trie-contains? trie key)
   (and trie
        (if (leaf? trie)
@@ -196,7 +196,7 @@
                       (trie-contains? r key)))))))
 
 ;; Assumes that trie is non-empty.
-(: trie-min (trie --> fixnum))
+(: trie-min (trie -> fixnum))
 (define (trie-min trie)
   (letrec
    ((search
@@ -212,7 +212,7 @@
         (search trie))))
 
 ;; Assumes that trie is non-empty.
-(: trie-max (trie --> fixnum))
+(: trie-max (trie -> fixnum))
 (define (trie-max trie)
   (letrec
    ((search
@@ -229,7 +229,7 @@
 
 ;;;; Insert
 
-(: %trie-insert-parts (trie fixnum fixnum --> non-empty-trie))
+(: %trie-insert-parts (trie fixnum fixnum -> non-empty-trie))
 (define (%trie-insert-parts trie prefix bitmap)
   (letrec
    ((ins
@@ -249,7 +249,7 @@
                     (%trie-join prefix 0 (raw-leaf prefix bitmap) p m t))))))))
     (ins trie)))
 
-(: trie-insert (trie fixnum --> non-empty-trie))
+(: trie-insert (trie fixnum -> non-empty-trie))
 (define (trie-insert trie key)
   (%trie-insert-parts trie (iprefix key) (ibitmap key)))
 
@@ -361,7 +361,7 @@
 
 ;;;; Update operations
 
-(: trie-delete (trie fixnum --> trie))
+(: trie-delete (trie fixnum -> trie))
 (define (trie-delete trie key)
   (letrec*
    ((prefix (iprefix key))
@@ -382,7 +382,7 @@
                     t)))))))
     (update trie)))
 
-(: trie-delete-min (trie --> fixnum trie))
+(: trie-delete-min (trie -> fixnum trie))
 (define (trie-delete-min trie)
   (letrec
    ((update/min
@@ -405,7 +405,7 @@
                 (values n (branch p m l* r)))))
         (update/min trie))))
 
-(: trie-delete-max (trie --> fixnum trie))
+(: trie-delete-max (trie -> fixnum trie))
 (define (trie-delete-max trie)
   (letrec
    ((update/max
@@ -428,7 +428,7 @@
                 (values n (branch p m l r*)))))
         (update/max trie))))
 
-(: trie-search (trie fixnum procedure procedure --> trie *))
+(: trie-search (trie fixnum procedure procedure -> trie *))
 (define (trie-search trie key failure success)
   (let* ((kp (iprefix key))
          (key-leaf (raw-leaf kp (ibitmap key))))
@@ -488,14 +488,14 @@
 ;;;; Set-theoretical operations
 
 (: %trie-join
-   (fixnum fixnum trie fixnum fixnum trie --> (struct <branch>)))
+   (fixnum fixnum trie fixnum fixnum trie -> (struct <branch>)))
 (define (%trie-join prefix1 mask1 trie1 prefix2 mask2 trie2)
   (let ((m (branching-bit prefix1 mask1 prefix2 mask2)))
     (if (zero-bit? prefix1 m)
         (raw-branch (mask prefix1 m) m trie1 trie2)
         (raw-branch (mask prefix1 m) m trie2 trie1))))
 
-(: branching-bit-higher? (fixnum fixnum --> boolean))
+(: branching-bit-higher? (fixnum fixnum -> boolean))
 (define (branching-bit-higher? mask1 mask2)
   (if (negative? (fxxor mask1 mask2))  ; signs differ
       (negative? mask1)
@@ -574,7 +574,7 @@
 
 ;; Construct a trie which forms the intersection of the two tries.
 ;; Runs in O(n+m) time.
-(: trie-intersection (trie trie --> trie))
+(: trie-intersection (trie trie -> trie))
 (define (trie-intersection trie1 trie2)
   (letrec
    ((intersect
@@ -617,7 +617,7 @@
 
 ;; Construct a trie containing the elements of trie1 not found in trie2.
 ;; Runs in O(n+m) time.
-(: trie-difference (trie trie --> trie))
+(: trie-difference (trie trie -> trie))
 (define (trie-difference trie1 trie2)
   (letrec
    ((difference
@@ -660,7 +660,7 @@
     (difference trie1 trie2)))
 
 ;; Delete all values described by `bitmap' from `trie'.
-(: %trie-delete-bitmap (trie fixnum fixnum --> trie))
+(: %trie-delete-bitmap (trie fixnum fixnum -> trie))
 (define (%trie-delete-bitmap trie prefix bitmap)
   (cond ((not trie) #f)
         ((leaf? trie)
@@ -677,7 +677,7 @@
 
 ;;;; Copying
 
-(: copy-trie (trie --> trie))
+(: copy-trie (trie -> trie))
 (define (copy-trie trie)
   (cond ((not trie) #f)
         ((leaf? trie) (raw-leaf (leaf-prefix trie) (leaf-bitmap trie)))
@@ -689,7 +689,7 @@
 
 ;;;; Size
 
-(: trie-size (trie --> integer))
+(: trie-size (trie -> integer))
 (define (trie-size trie)
   (let accum ((siz 0) (t trie))
     (cond ((not t) siz)
@@ -699,7 +699,7 @@
 
 ;;;; Comparisons
 
-(: trie=? (trie trie --> boolean))
+(: trie=? (trie trie -> boolean))
 (define (trie=? trie1 trie2)
   (cond ((not (or trie1 trie2)) #t)
         ((and (leaf? trie1) (leaf? trie2))
@@ -710,7 +710,7 @@
            (and (fx=? m n) (fx=? p q) (trie=? l1 l2) (trie=? r1 r2))))
         (else #f)))
 
-(: subset-compare-leaves ((struct <leaf>) (struct <leaf>) --> symbol))
+(: subset-compare-leaves ((struct <leaf>) (struct <leaf>) -> symbol))
 (define (subset-compare-leaves l1 l2)
   (let*-leaf (((p b) l1) ((q c) l2))
     (if (fx=? p q)
@@ -726,7 +726,7 @@
 ;; disjoint sets will compare as greater.
 ;;
 ;; FIXME: Simplify this.
-(: trie-subset-compare (trie trie --> symbol))
+(: trie-subset-compare (trie trie -> symbol))
 (define (trie-subset-compare trie1 trie2)
   (letrec
    ((compare
@@ -766,7 +766,7 @@
                (else 'greater))))))  ; disjoint
     (compare trie1 trie2)))
 
-(: trie-proper-subset? (trie trie --> boolean))
+(: trie-proper-subset? (trie trie -> boolean))
 (define (trie-proper-subset? trie1 trie2)
   (eqv? (trie-subset-compare trie1 trie2) 'less))
 
@@ -815,7 +815,7 @@
 ;; less than k, if `inclusive' is false, or less than or equal to
 ;; k if `inclusive' is true.
 ;; Runs in O(min(n, W)) time.
-(: subtrie< (trie fixnum boolean --> trie))
+(: subtrie< (trie fixnum boolean -> trie))
 (define (subtrie< trie k inclusive)
   (letrec
     ((split
@@ -839,7 +839,7 @@
 
 ;; Return a bitmap containing all elements in `bitmap' that are
 ;; less than/less than or equal to k.
-(: bitmap-split< (fixnum boolean fixnum fixnum --> fixnum))
+(: bitmap-split< (fixnum boolean fixnum fixnum -> fixnum))
 (define (bitmap-split< k inclusive prefix bitmap)
   (let ((kp (iprefix k)) (kb (ibitmap k)))
     (cond ((fx>? kp prefix) bitmap)
@@ -855,7 +855,7 @@
 ;; greater than k, if `inclusive' is false, or greater than or equal
 ;; to k if `inclusive' is true.
 ;; Runs in O(min(n, W)) time.
-(: subtrie> (trie fixnum boolean --> trie))
+(: subtrie> (trie fixnum boolean -> trie))
 (define (subtrie> trie k inclusive)
   (letrec
    ((split
@@ -879,7 +879,7 @@
 
 ;; Return a bitmap containing all elements in `bitmap' that are
 ;; greater than/greater than or equal to `k'.
-(: bitmap-split> (fixnum boolean fixnum fixnum --> fixnum))
+(: bitmap-split> (fixnum boolean fixnum fixnum -> fixnum))
 (define (bitmap-split> k inclusive prefix bitmap)
   (let ((kp (iprefix k)) (kb (ibitmap k)))
     (cond ((fx<? kp prefix) bitmap)
@@ -894,7 +894,7 @@
 ;; greater than/greater than or equal to a and less than/less than
 ;; or equal to b, depending on the truth values of
 ;; low-/high-inclusive.
-(: subtrie-interval (trie fixnum fixnum boolean boolean --> trie))
+(: subtrie-interval (trie fixnum fixnum boolean boolean -> trie))
 (define (subtrie-interval trie a b low-inclusive high-inclusive)
   (letrec
    ((interval
