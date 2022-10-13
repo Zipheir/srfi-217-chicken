@@ -65,7 +65,16 @@
   (test #t (iset=? (iset 1 2 3 4) (iset 1 2 3 4)))
   (test #t (iset=? (iset 1 2 3 4) (iset 2 1 4 3) (iset 3 2 1 4)))
   (test #f (iset=? (iset 1 2 3 4) (iset 2 3 4)))
-  (test #f (iset=? pos-set neg-set)))
+  (test #f (iset=? pos-set neg-set))
+
+  (test-with-random-isets (s1 s2)
+    (test #t (iset=? s1 s1))
+    (test (iset-empty? s1) (iset=? s1 (iset)))
+    (test-equal iset=? s1 (list->iset (iset->list s1)))
+    (test (equal? (iset->list s1) (iset->list s2))
+          (iset=? s1 s2))
+    )
+  )
 
 (test-group "Copying and conversion"
   ;;; iset-copy
