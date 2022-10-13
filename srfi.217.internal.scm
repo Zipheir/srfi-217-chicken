@@ -126,7 +126,7 @@
 
 ;; Does the m-masked prefix of k match p?
 (: match-prefix? (fixnum fixnum fixnum -> boolean))
-(define (match-prefix? k p m)
+(define-inline (match-prefix? k p m)
   (fx=? (mask k m) p))
 
 (: branching-bit (fixnum fixnum fixnum fixnum -> fixnum))
@@ -137,7 +137,7 @@
 
 ;; Two's-complement trick.
 (: lowest-bit-mask (fixnum -> fixnum))
-(define (lowest-bit-mask b)
+(define-inline (lowest-bit-mask b)
   (fxand b (fxneg b)))
 
 (: highest-bit-mask (fixnum fixnum -> fixnum))
@@ -154,19 +154,19 @@
   (fxfirst-set-bit (highest-bit-mask k 1)))
 
 (: zero-bit? (fixnum fixnum -> boolean))
-(define (zero-bit? k m)
+(define-inline (zero-bit? k m)
   (fxzero? (fxand k m)))
 
 (: isuffix (fixnum -> fixnum))
-(define (isuffix k)
+(define-inline (isuffix k)
   (fxand k suffix-mask))
 
 (: iprefix (fixnum -> fixnum))
-(define (iprefix k)
+(define-inline (iprefix k)
   (fxand k prefix-mask))
 
 (: ibitmap (fixnum -> fixnum))
-(define (ibitmap k)
+(define-inline (ibitmap k)
   (fxarithmetic-shift 1 (isuffix k)))
 
 (: bitmap-delete (fixnum fixnum -> fixnum))
