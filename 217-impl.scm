@@ -272,7 +272,7 @@
   (call-with-current-continuation
    (lambda (return)
      (trie-fold (lambda (n _)
-                  (or (pred n) (return #f)))
+                  (if (pred n) #t (return #f)))
                 #t
                 (iset-trie set)))))
 
