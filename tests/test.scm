@@ -133,19 +133,45 @@
   )
 
 (test-group "Constructors"
-  (test-equal iset=?
-              (list->iset (iota 10 0 4))
-              (iset-unfold (lambda (i) (> i 36))
-                           values
-                           (lambda (i) (+ i 4))
-                           0))
+  (test-group "iset"
+    (test #t (iset-empty? (iset)))
 
-  (test-equal iset=?
-              (list->iset (iota 20 -10))
-              (make-range-iset -10 10))
-  (test-equal iset=?
-              (list->iset (iota 10 -10 2))
-              (make-range-iset -10 10 2))
+    (test-equal iset=? (list->iset 1 3 5 7) (iset 1 3 5 7))
+    (test #t (raises-type-condition (iset 9 3 0.5)))
+    )
+
+  (test-group "iset-unfold"
+    (test-equal iset=?
+                (list->iset (iota 10 0 4))
+                (iset-unfold (lambda (i) (> i 36))
+                             values
+                             (lambda (i) (+ i 4))
+                             0))
+    (test #t (raises-type-condition (iset-unfold #t values add1 0)))
+    (test #t (raises-type-condition (iset-unfold zero? 6 add1 0)))
+    (test #t (raises-type-condition (iset-unfold zero? values 'z 0)))
+    )
+
+  ;; TODO: More tests for this.
+  (test-group "make-range-iset"
+    (test #t (iset-empty? (make-range-iset 0 0)))
+    (test-equal iset=?
+                (list->iset (iota 20 -10))
+                (make-range-iset -10 10))
+    (test-equal iset=?
+                (list->iset (iota 10 -10 2))
+                (make-range-iset -10 10 2))
+    (test-equal iset=?
+                (iset 1000)
+                (make-range-iset 1000 1500 500))
+    (test-equal iset=?
+                (iset 1000)
+                (make-range-iset 1000 500 -500))
+    (test-error (make-range-iset 50 500 0))
+    (test #t (raises-type-condition (make-range-iset 0.3 0 1)))
+    (test #t (raises-type-condition (make-range-iset 0 'z 3)))
+    (test #t (raises-type-condition (make-range-iset 0 3 #f)))
+    )
   )
 
 (test-group "Predicates"
