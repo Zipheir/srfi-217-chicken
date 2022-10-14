@@ -100,7 +100,7 @@
 (test-group "Copying and conversion"
   (test-group "iset-copy"
     (test-with-random-isets (s)
-      (test #t (not (eqv? (iset-copy s)) s))
+      (test #t (not (eqv? (iset-copy s) s)))
       (test #t (iset=? s (iset-copy s)))
       )
     (test #t (raises-type-condition (iset-copy #t)))
@@ -126,8 +126,8 @@
       (test (length ks) (iset-size (list->iset ks)))
       (test #t (iset-every? (cut memv <> ks) (list->iset ks)))
       (test #t
-            (let ((s (iset->list ks)))
-              (every (cut iset-contains s <>) ks)))
+            (let ((s (list->iset ks)))
+              (and (every (cut iset-contains s <>) ks) #t)))
       )
     (test #t (raises-type-condition (list->iset 0.3)))
     )
@@ -137,7 +137,7 @@
   (test-group "iset"
     (test #t (iset-empty? (iset)))
 
-    (test-equal iset=? (list->iset 1 3 5 7) (iset 1 3 5 7))
+    (test-equal iset=? (list->iset '(1 3 5 7)) (iset 1 3 5 7))
     (test #t (raises-type-condition (iset 9 3 0.5)))
     )
 
