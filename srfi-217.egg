@@ -9,6 +9,6 @@
  (components
   (extension srfi.217.internal
    (types-file)
-   (csc-options "-O3" "-d1"))
+   (csc-options "-O3" "-d0"))
   (extension srfi-217
    (types-file))))
