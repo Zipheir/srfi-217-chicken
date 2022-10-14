@@ -127,7 +127,7 @@
       (test #t (iset-every? (cut memv <> ks) (list->iset ks)))
       (test #t
             (let ((s (list->iset ks)))
-              (and (every (cut iset-contains s <>) ks) #t)))
+              (and (every (cut iset-contains? s <>) ks) #t)))
       )
     (test #t (raises-type-condition (list->iset 0.3)))
     )
