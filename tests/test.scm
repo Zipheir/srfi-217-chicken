@@ -5,8 +5,7 @@
         (srfi 217)
         (test)
         test-generative
-        (only (srfi 1) iota any every last take-while drop-while count
-                       fold filter remove last partition)
+        (srfi 1)
         )
 
 ;;; Utility
@@ -48,6 +47,17 @@
                  add1
                  0)))
 
+;; Return a list of random size containing random fixnums.
+;; FIXME: Find a saner way to generate random integers in the
+;; full fixnum range.
+(define (random-list len-bound)
+  (list-tabulate
+   (random-int len-bound)
+   (lambda (_i)
+     (let ((neg (random-int 2))
+           (k (random-int most-positive-fixnum)))
+       (if (zero? neg) k (- k))))))
+
 ;; Use test-generative to bind a list of names to random isets
 ;; over a bunch of test expressions.
 (define-syntax test-with-random-isets
@@ -56,6 +66,16 @@
      `(test-generative ,(map (lambda (v) (list v 'random-iset))
                              (cadr exp))
         ,@(cddr exp)))))
+
+;; Evaluates to true if the expression raises a type condition.
+(define-syntax raises-type-condition
+  (syntax-rules ()
+    ((raises-type-condition e)
+     (handle-exceptions con
+                        ((condition-predicate 'type) con)
+       e))))
+
+;;;; Tests
 
 ;; Most other test groups use iset=?, so test this first.
 (test-group "iset=?"
@@ -77,25 +97,39 @@
   )
 
 (test-group "Copying and conversion"
-  ;;; iset-copy
-  (test-assert (not (eqv? (iset-copy pos-set) pos-set)))
-  (test-assert (every (lambda (set)
-                        (iset-every? (lambda (n) (iset-contains? set n))
-                                     (iset-copy set)))
-                      all-test-sets))
+  (test-group "iset-copy"
+    (test-with-random-isets (s)
+      (test #t (not (eqv? (iset-copy s)) s))
+      (test #t (iset=? s (iset-copy s)))
+      )
+    (test #t (raises-type-condition (iset-copy #t)))
+    )
 
-  ;;; iset->list
+  (test-group "iset->list"
+    (test '() (iset->list (iset)))
 
-  (test '() (iset->list (iset)))
-  (test pos-seq (iset->list pos-set))
-  (test neg-seq (iset->list neg-set))
-  (test mixed-seq (iset->list mixed-set))
-  (test sparse-seq (iset->list sparse-set))
+    (test-with-random-isets (s)
+      (test (iset-size s) (length (iset->list s)))
+      (test #t (every (lambda (k) (iset-contains? s k)) (iset->list s)))
+      (test #t
+            (let ((ks (iset->list s)))
+              (iset-every? (cut memv <> ks) s)))
+      )
+    (test #t (raises-type-condition (iset->list #t)))
+    )
 
-  (test-equal iset=? (iset 1) (list->iset! (iset) '(1)))
-  (test-equal iset=?
-              (iset-adjoin pos-set 2 4 6)
-              (list->iset! (iset-copy pos-set) '(2 4 6)))
+  (test-group "list->iset"
+    (test #t (iset-empty? (list->iset '())))
+
+    (test-generative ((ks (lambda () (random-list 64))))
+      (test (length ks) (iset-size (list->iset ks)))
+      (test #t (iset-every? (cut memv <> ks) (list->iset ks)))
+      (test #t
+            (let ((s (iset->list ks)))
+              (every (cut iset-contains s <>) ks)))
+      )
+    (test #t (raises-type-condition (list->iset 0.3)))
+    )
   )
 
 (test-group "Constructors"
