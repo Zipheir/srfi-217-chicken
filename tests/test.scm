@@ -1,4 +1,5 @@
 (import (chicken base)
+        (chicken condition)
         (chicken fixnum)
         (rename (chicken random) (pseudo-random-integer random-int))
         (chicken syntax)
