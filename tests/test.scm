@@ -327,56 +327,113 @@
     (test #t (raises-type-condition (iset-delete-all (iset) '(1 2 z))))
     )
 
-  ;; iset-search insertion
-  (test-assert
-   (call-with-values
-    (lambda ()
-      (iset-search mixed-set
-                   1
-                   (lambda (insert _) (insert #t))
-                   (lambda (x update _) (update 1 #t))))
-    (lambda (set _) (iset=? (iset-adjoin mixed-set 1) set))))
+  ;; There are a ton of cases to check here.
+  (test-group "iset-search"
+    ;; Ignore
+    (test-assert
+     (let-values (((s obj)
+                   (iset-search (iset)
+                                1
+                                (lambda (_ins ignore) (ignore 'z))
+                                (lambda (k _up remove) (remove 'y)))))
+       (and (iset-empty? s) (eqv? obj 'z))))
 
-  ;; iset-search ignore
-  (test-assert
-   (call-with-values
-    (lambda ()
-      (iset-search mixed-set
-                   1
-                   (lambda (_ ignore) (ignore #t))
-                   (lambda (x _ remove) (remove #t))))
-    (lambda (set _) (iset=? mixed-set set))))
+    ;; Insert
+    (test-assert
+     (let-values (((s obj)
+                   (iset-search (iset)
+                                1
+                                (lambda (insert _ig) (insert 'z))
+                                (lambda (k update _rem) (update 1 'y)))))
+       (and (iset=? s (iset 1)) (eqv? obj 'z))))
 
-  ;; iset-search update with same element.
-  (test-assert
-   (call-with-values
-    (lambda ()
-      (iset-search mixed-set
-                   2
-                   (lambda (insert _) (insert #t))
-                   (lambda (x update _) (update 2 #t))))
-    (lambda (set _) (iset=? mixed-set set))))
+    ;; Remove
+    (test-assert
+     (let-values (((s obj)
+                   (iset-search (iset 1)
+                                1
+                                (lambda (_ins ignore) (ignore 'y))
+                                (lambda (k _up remove) (remove 'z)))))
+       (and (iset-empty? s) (eqv? obj 'z))))
 
-  ;; iset-search update with different element.
-  (test-assert
-   (call-with-values
-    (lambda ()
-      (iset-search mixed-set
-                   2
-                   (lambda (insert _) (insert #t))
-                   (lambda (x update _) (update 3 #t))))
-    (lambda (set _)
-      (iset=? (iset-adjoin (iset-delete mixed-set 2) 3) set))))
+    ;; Update
+    (test-assert
+     (let-values (((s obj)
+                   (iset-search (iset 1)
+                                1
+                                (lambda (insert _ig) (insert 'y))
+                                (lambda (k update _rem) (update 2 k)))))
+       (and (iset=? s (iset 2)) (eqv? obj 1))))
 
-  ;; iset-search remove
-  (test-assert
-   (call-with-values
-    (lambda ()
-      (iset-search mixed-set
-                   2
-                   (lambda (_ ignore) (ignore #t))
-                   (lambda (x _ remove) (remove #t))))
-    (lambda (set _) (iset=? (iset-delete mixed-set 2) set))))
+    (test-with-random-isets (s)
+      ;; Ignore or update with same element -> same set
+      (test-assert
+       (let-values (((s* _obj)
+                     (iset-search s
+                                  64
+                                  (lambda (_ins ignore) (ignore #t))
+                                  (lambda (k update _rem)
+                                    (update k #t)))))
+         (iset=? s s*)))
+
+      ;; Insert or update with same element -> possibly extended set
+      (test-assert
+       (let-values (((s* _obj)
+                     (iset-search s
+                                  64
+                                  (lambda (insert _ig) (insert #t))
+                                  (lambda (k update _rem)
+                                    (update k #t)))))
+         (iset=? (iset-adjoin s 64) s*)))
+
+      ;; Ignore or update with new element.  'found' indicates result.
+      (test-assert
+       (let-values (((s* found)
+                     (iset-search s
+                                  64
+                                  (lambda (_ins ignore) (ignore #f))
+                                  (lambda (_k update _rem)
+                                    (update 128 #t)))))
+         (if found
+             (iset=? s* (iset-adjoin (iset-delete s 64) 128))
+             (iset=? s* s))))
+
+      ;; Insert or update with new element.  'found' indicates result.
+      (test-assert
+       (let-values (((s* found)
+                     (iset-search s
+                                  64
+                                  (lambda (insert _ig) (insert #f))
+                                  (lambda (_k update _rem)
+                                    (update 128 #t)))))
+         (if found
+             (iset=? s* (iset-adjoin (iset-delete s 64) 128))
+             (iset=? s* (iset-adjoin s 64)))))
+
+      ;; Ignore or remove.  'found' indicates result.
+      (test-assert
+       (let-values (((s* found)
+                     (iset-search s
+                                  64
+                                  (lambda (_ins ignore) (ignore #f))
+                                  (lambda (_k _up remove)
+                                    (remove #t)))))
+         (if found
+             (iset=? s* (iset-delete s 64))
+             (iset=? s* s))))
+
+      ;; Insert or remove.  'found' indicates result.
+      (test-assert
+       (let-values (((s* found)
+                     (iset-search s
+                                  64
+                                  (lambda (insert _ig) (insert #f))
+                                  (lambda (_k _up remove)
+                                    (remove #t)))))
+         (if found
+             (iset=? s* (iset-delete s 64))
+             (iset=? s* (iset-adjoin s 64)))))
+      ))
 
   ;;; iset-delete-min / -max
 
