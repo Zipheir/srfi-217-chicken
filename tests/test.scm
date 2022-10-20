@@ -437,23 +437,37 @@
 
   ;;; iset-delete-min / -max
 
-  (test-values (values #t #t)
-               (let-values (((n mixed-set*) (iset-delete-min mixed-set)))
-                 (values (= n (car mixed-seq))
-                         (iset=? mixed-set* (list->iset (cdr mixed-seq))))))
-  (test-values (values #t #t)
-               (let-values (((n sparse-set*) (iset-delete-min sparse-set)))
-                 (values (= n (car sparse-seq))
-                         (iset=? sparse-set* (list->iset (cdr sparse-seq))))))
+  (test-group "iset-delete-min"
+    (test-error (iset-delete-min (iset)))
+    (test-assert
+     (let-values (((k s) (iset-delete-min (iset 1))))
+       (and (iset-empty? s) (eqv? k 1))))
 
-  (test-values (values #t #t)
-               (let-values (((n mixed-set*) (iset-delete-max mixed-set)))
-                 (values (= n (last mixed-seq))
-                         (iset=? mixed-set* (list->iset (init mixed-seq))))))
-  (test-values (values #t #t)
-               (let-values (((n sparse-set*) (iset-delete-max sparse-set)))
-                 (values (= n (last sparse-seq))
-                         (iset=? sparse-set* (list->iset (init sparse-seq))))))
+    (test-with-random-isets (s)
+      (unless (iset-empty? s)
+        (test-assert
+         (let-values (((k s*) (iset-delete-min s))
+                      ((m) (iset-min s)))
+           (and (= k m) (iset=? s* (iset-delete s m)))))
+      ))
+    (test #t (raises-type-condition (iset-delete-min #t)))
+    )
+
+  (test-group "iset-delete-max"
+    (test-error (iset-delete-max (iset)))
+    (test-assert
+     (let-values (((k s) (iset-delete-max (iset 1))))
+       (and (iset-empty? s) (eqv? k 1))))
+
+    (test-with-random-isets (s)
+      (unless (iset-empty? s)
+        (test-assert
+         (let-values (((k s*) (iset-delete-max s))
+                      ((m) (iset-max s)))
+           (and (= k m) (iset=? s* (iset-delete s m)))))
+      ))
+    (test #t (raises-type-condition (iset-delete-max #t)))
+    )
   )
 
 (test-group "Whole set operations"
