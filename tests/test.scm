@@ -303,11 +303,29 @@
     (test #t (raises-type-condition (iset-delete (iset) 1 2 10.1)))
     )
 
-  (test-assert (iset-empty? (iset-delete-all (iset) '())))
-  (test-equal iset=? pos-set (iset-delete-all pos-set '()))
-  (test-equal iset=?
-              (iset 100 103 106)
-              (iset-delete-all pos-set (iota 17 109 3)))
+  (test-group "iset-delete-all"
+    (test #t (iset-empty? (iset-delete-all (iset) '())))
+    (test #t (iset-empty? (iset-delete-all (iset) '(1 2 3))))
+    (test-equal iset=?
+                (iset 100 103 106)
+                (iset-delete-all pos-set (iota 17 109 3)))
+
+    (test-with-random-isets (s)
+      (test-equal iset=? s (iset-delete-all s '()))
+      (test #t (iset-empty? (iset-delete-all s (iset->list s))))
+      (test #f (iset-contains? (iset-delete-all s '(10)) 10))
+      (test #f
+            (let ((s* (iset-delete-all s '(-64 128 -256))))
+              (or (iset-contains? s* -64)
+                  (iset-contains? s* 128)
+                  (iset-contains? s* -256))))
+      ;; delete-all after adjoin
+      (test-equal iset=? s (iset-delete-all (iset-adjoin 1 2) '(1 2)))
+      )
+    (test #t (raises-type-condition (iset-delete-all #t '())))
+    (test #t (raises-type-condition (iset-delete-all (iset) 10.1)))
+    (test #t (raises-type-condition (iset-delete-all (iset) '(1 2 z))))
+    )
 
   ;; iset-search insertion
   (test-assert
