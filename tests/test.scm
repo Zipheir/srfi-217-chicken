@@ -259,21 +259,49 @@
     ))
 
 (test-group "Updaters"
-  (test '(1) (iset->list (iset-adjoin (iset) 1)))
-  (test-assert (iset-contains? (iset-adjoin neg-set 10) 10))
-  (test-assert (iset-contains? (iset-adjoin dense-set 100) 100))
-  (test-assert (iset-contains? (iset-adjoin sparse-set 100) 100))
-  (test-equal iset=?
-              (list->iset (cons -3 (iota 20 100 3)))
-              (iset-adjoin pos-set -3))
+  (test-group "iset-adjoin"
+    (test '(1) (iset->list (iset-adjoin (iset) 1)))
+    (test #t (iset=? (iset 1 -2) (iset-adjoin (iset) 1 -2)))
+    (test #t (iset=? (iset 1 -2 3) (iset-adjoin (iset) 1 -2 3)))
+    (test #t (iset-contains? (iset-adjoin neg-set 10) 10))
+    (test #t (iset-contains? (iset-adjoin dense-set 100) 100))
+    (test #t (iset-contains? (iset-adjoin sparse-set 100) 100))
 
-  (test '() (iset->list (iset-delete (iset 1) 1)))
-  (test-not (iset-contains? (iset-delete neg-set 10) 10))
-  (test-not (iset-contains? (iset-delete dense-set 1033) 1033))
-  (test-not (iset-contains? (iset-delete sparse-set 30) 30))
-  (test-equal iset=?
-              (list->iset (cdr (iota 20 100 3)))
-              (iset-delete pos-set 100))
+    (test-with-random-isets (s)
+      (test (iset-contains? s 10) (iset=? s (iset-adjoin s 10)))
+      (test #t (iset-contains? (iset-adjoin s 10) 10))
+      (test #t
+            (let ((s* (iset-adjoin s -64 128 -256)))
+              (and (iset-contains? s* -64)
+                   (iset-contains? s* 128)
+                   (iset-contains? s* -256))))
+      )
+    (test #t (raises-type-condition (iset-adjoin #t 10)))
+    (test #t (raises-type-condition (iset-adjoin (iset) 10.1)))
+    (test #t (raises-type-condition (iset-adjoin (iset) 1 2 10.1)))
+    )
+
+  (test-group "iset-delete"
+    (test '() (iset->list (iset-delete (iset 1) 1)))
+    (test #f (iset-contains? (iset-delete neg-set 10) 10))
+    (test #f (iset-contains? (iset-delete dense-set 1033) 1033))
+    (test #f (iset-contains? (iset-delete sparse-set 30) 30))
+
+    (test-with-random-isets (s)
+      (test (not (iset-contains? s 10)) (iset=? s (iset-delete s 10)))
+      (test #f (iset-contains? (iset-delete s 10) 10))
+      (test #f
+            (let ((s* (iset-delete s -64 128 -256)))
+              (or (iset-contains? s* -64)
+                  (iset-contains? s* 128)
+                  (iset-contains? s* -256))))
+      ;; delete after adjoin
+      (test #t (iset=? s (iset-delete (iset-adjoin s 10) 10)))
+      )
+    (test #t (raises-type-condition (iset-delete #t 10)))
+    (test #t (raises-type-condition (iset-delete (iset) 10.1)))
+    (test #t (raises-type-condition (iset-delete (iset) 1 2 10.1)))
+    )
 
   (test-assert (iset-empty? (iset-delete-all (iset) '())))
   (test-equal iset=? pos-set (iset-delete-all pos-set '()))
