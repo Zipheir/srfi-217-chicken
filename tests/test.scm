@@ -228,21 +228,35 @@
   )
 
 (test-group "Accessors"
-  (test 103 (iset-member pos-set 103 #f))
-  (test 'z (iset-member pos-set 104 'z))
+  (test-group "iset-member"
+    (test 'z (iset-member (iset) 0 'z))
+    (test 103 (iset-member pos-set 103 #f))
+    (test 'z (iset-member pos-set 104 'z))
+    (test -103 (iset-member neg-set -103 #f))
+    (test 'z (iset-member neg-set 10 'z))
+    (test 1 (iset-member mixed-set 0 #f))
+    (test 'z (iset-member mixed-set -200 'z))
+    (test 30 (iset-member sparse-set 30 #f))
+    (test 'z (iset-member sparse-set 39 'z))
+    )
 
-  (test-not (iset-min (iset)))
-  (test 1 (iset-min (iset 1 2 3)))
-  (test (car pos-seq) (iset-min pos-set))
-  (test (car neg-seq) (iset-min neg-set))
-  (test (car mixed-seq) (iset-min mixed-set))
+  (test-group "iset-min"
+    (test #f (iset-min (iset)))
+    (test 1 (iset-min (iset 1 2 3)))
+    (test (car pos-seq) (iset-min pos-set))
+    (test (car neg-seq) (iset-min neg-set))
+    (test (car mixed-seq) (iset-min mixed-set))
+    (test (car sparse-seq) (iset-min sparse-set))
+    )
 
-  (test-not (iset-max (iset)))
-  (test 3 (iset-max (iset 1 2 3)))
-  (test (last pos-seq) (iset-max pos-set))
-  (test (last neg-seq) (iset-max neg-set))
-  (test (last mixed-seq) (iset-max mixed-set))
-  )
+  (test-group "iset-max"
+    (test #f (iset-max (iset)))
+    (test 3 (iset-max (iset 1 2 3)))
+    (test (last pos-seq) (iset-max pos-set))
+    (test (last neg-seq) (iset-max neg-set))
+    (test (last mixed-seq) (iset-max mixed-set))
+    (test (last sparse-seq) (iset-max sparse-set))
+    ))
 
 (test-group "Updaters"
   (test '(1) (iset->list (iset-adjoin (iset) 1)))
