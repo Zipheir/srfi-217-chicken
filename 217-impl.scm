@@ -236,6 +236,7 @@
 
 (: iset-find ((fixnum -> *) iset procedure -> *))
 (define (iset-find pred set failure)
+  (assert-type 'iset-find (procedure? pred))
   (assert-type 'iset-find (procedure? failure))
   (call-with-current-continuation
    (lambda (return)
