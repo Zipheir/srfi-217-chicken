@@ -464,30 +464,83 @@
   )
 
 (test-group "Whole set operations"
-  (test 0 (iset-size (iset)))
-  (test (length pos-seq) (iset-size pos-set))
-  (test (length mixed-seq) (iset-size mixed-set))
-  (test (length sparse-seq) (iset-size sparse-set))
+  (test-group "iset-size"
+    (test 0 (iset-size (iset)))
+    (test-with-random-isets (s)
+      (test (length (iset->list s)) (iset-size s)))
+    (test #t (raises-type-condition (iset-size "foo")))
+    )
 
-  (test 8 (iset-find even? (iset 1 3 5 7 8 9 10) (lambda () #f)))
-  (test 'z (iset-find negative? pos-set (lambda () 'z)))
+  (test-group "iset-find"
+    (test 'z (iset-find even? (iset) (lambda () 'z)))
+    (test 8 (iset-find even? (iset 1 3 5 7 8 9 10) (lambda () #f)))
+    (test 'z (iset-find negative? pos-set (lambda () 'z)))
 
-  (test #f (iset-any? even? (iset)))
-  (test-assert (iset-any? even? pos-set))
-  (test-not (iset-any? negative? pos-set))
-  (test-assert (iset-any? (lambda (n) (> n 100)) sparse-set))
-  (test-not (iset-any? (lambda (n) (> n 100)) dense-set))
+    (test-with-random-isets (s)
+      (unless (iset-empty? s)
+        (test (iset-min s) (iset-find integer? s (lambda () #f)))
+        )
+      (test 64 (iset-find (lambda (x) (= x 64))
+                          (iset-adjoin s 64)
+                          (lambda () #f)))
+      (test 'z (iset-find (lambda (x) (= x 64))
+                          (iset-delete s 64)
+                          (lambda () 'z)))
+      )
+    (test #t (raises-type-condition
+               (iset-find #t (iset) (lambda () #f))))
+    (test #t (raises-type-condition
+               (iset-find even? 3+2i (lambda () #f))))
+    (test #t (raises-type-condition (iset-find even? (iset) #f)))
+    )
 
-  (test #t (iset-every? even? (iset)))
-  (test-not (iset-every? even? pos-set))
-  (test-assert (iset-every? negative? neg-set))
-  (test-not (iset-every? (lambda (n) (> n 100)) sparse-set))
-  (test-assert (iset-every? (lambda (n) (< n 100)) dense-set))
+  (test-group "iset-any?"
+    (test #f (iset-any? even? (iset)))
 
-  (test 0 (iset-count even? (iset)))
-  (test (count even? pos-seq) (iset-count even? pos-set))
-  (test (count even? neg-seq) (iset-count even? neg-set))
-  (test (count even? sparse-seq) (iset-count even? sparse-set))
+    (test-with-random-isets (s)
+      (test (not (iset-empty? s)) (iset-any? (constantly #t) s))
+      (test #f (iset-any? (constantly #f) s))
+      (test #t (iset-any? (lambda (x) (= x 64)) (iset-adjoin s 64)))
+      (test #f (iset-any? (lambda (x) (= x 64)) (iset-delete s 64)))
+      (test (and (any even? (iset->list s)) #t)
+            (iset-any? even? s))
+      )
+    (test #t (raises-type-condition (iset-any? #t (iset))))
+    (test #t (raises-type-condition (iset-any? even? #x10)))
+    )
+
+  (test-group "iset-every?"
+    (test #t (iset-every? even? (iset)))
+    (test #f (iset-every? even? pos-set))
+    (test #t (iset-every? negative? neg-set))
+    (test #f (iset-every? (lambda (n) (> n 100)) sparse-set))
+    (test #t (iset-every? (lambda (n) (< n 100)) dense-set))
+
+    (test-with-random-isets (s)
+      (test #t (iset-every? (constantly #t) s))
+      (test (iset-empty? s) (iset-every? (constantly #f) s))
+      (test (and (every even? (iset->list s)) #t)
+            (iset-every? even? s))
+      )
+    (test #t (raises-type-condition (iset-every? 20 (iset))))
+    (test #t (raises-type-condition (iset-every? even? 'z)))
+    )
+
+  (test-group "iset-count"
+    (test 0 (iset-count even? (iset)))
+    (test (count even? neg-seq) (iset-count even? neg-set))
+    (test (count even? sparse-seq) (iset-count even? sparse-set))
+
+    (test-with-random-isets (s)
+      (test (iset-size s) (iset-count (constantly #t) s))
+      (test 0 (iset-count (constantly #f) s))
+      (test 1 (iset-count (lambda (x) (= x 64)) (iset-adjoin s 64)))
+      (test 0 (iset-count (lambda (x) (= x 64)) (iset-delete s 64)))
+      (test (count even? (iset->list s)) (iset-count even? s))
+      )
+    (test #t (raises-type-condition (iset-count #t (iset))))
+    (test #t (raises-type-condition (iset-count even? '(1 2))))
+    )
   )
 
 (test-group "Iterators"
