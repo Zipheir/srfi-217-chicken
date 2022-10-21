@@ -386,53 +386,46 @@
                                     (update k #t)))))
          (iset=? (iset-adjoin s 64) s*)))
 
-      ;; Ignore or update with new element.  'found' indicates result.
+      ;; Update with new element.
       (test-assert
-       (let-values (((s* found)
-                     (iset-search s
+       (let-values (((s* obj)
+                     (iset-search (iset-adjoin s 64)
                                   64
                                   (lambda (_ins ignore) (ignore #f))
                                   (lambda (_k update _rem)
-                                    (update 128 #t)))))
-         (if found
-             (iset=? s* (iset-adjoin (iset-delete s 64) 128))
-             (iset=? s* s))))
+                                    (update 128 'z)))))
+         (and (iset=? s* (iset-adjoin (iset-delete s 64) 128))
+              (eqv? obj 'z))))
 
-      ;; Insert or update with new element.  'found' indicates result.
+      ;; Remove.
       (test-assert
-       (let-values (((s* found)
-                     (iset-search s
-                                  64
-                                  (lambda (insert _ig) (insert #f))
-                                  (lambda (_k update _rem)
-                                    (update 128 #t)))))
-         (if found
-             (iset=? s* (iset-adjoin (iset-delete s 64) 128))
-             (iset=? s* (iset-adjoin s 64)))))
-
-      ;; Ignore or remove.  'found' indicates result.
-      (test-assert
-       (let-values (((s* found)
-                     (iset-search s
+       (let-values (((s* obj)
+                     (iset-search (iset-adjoin s 64)
                                   64
                                   (lambda (_ins ignore) (ignore #f))
                                   (lambda (_k _up remove)
-                                    (remove #t)))))
-         (if found
-             (iset=? s* (iset-delete s 64))
-             (iset=? s* s))))
+                                    (remove 'z)))))
+         (and (iset=? s* (iset-delete s 64)) (eqv? obj 'z))))
 
-      ;; Insert or remove.  'found' indicates result.
+      ;; Insert missing element.
       (test-assert
-       (let-values (((s* found)
-                     (iset-search s
+       (let-values (((s* obj)
+                     (iset-search (iset-delete s 64)
                                   64
-                                  (lambda (insert _ig) (insert #f))
+                                  (lambda (insert _ig) (insert 'z))
+                                  (lambda (_k update _rem)
+                                    (update 64 #t)))))
+         (and (iset=? s* (iset-adjoin s 64)) (eqv? obj 'z))))
+
+      ;; Ignore missing element.
+      (test-assert
+       (let-values (((s* obj)
+                     (iset-search (iset-delete s 64)
+                                  64
+                                  (lambda (_ins ignore) (ignore 'z))
                                   (lambda (_k _up remove)
                                     (remove #t)))))
-         (if found
-             (iset=? s* (iset-delete s 64))
-             (iset=? s* (iset-adjoin s 64)))))
+         (and (iset=? s* (iset-delete s 64)) (eqv? obj 'z))))
       ))
 
   ;;; iset-delete-min / -max
