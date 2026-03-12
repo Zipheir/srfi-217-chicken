@@ -16,4 +16,7 @@
     ((test-not expr)
      (test-assert (not expr)))))
 
+(cond-expand
+ (chicken-6 (import (scheme base)))
+ (else))
 (include "test.scm")

@@ -6,9 +6,28 @@
  (maintainer "Wolfgang Corcoran-Mathe")
  (dependencies srfi-1 srfi-143 typed-records)
  (test-dependencies test)
- (components
-  (extension srfi.217.internal
-   (types-file)
-   (csc-options "-O3" "-d0"))
-  (extension srfi-217
-   (types-file))))
+ (cond-expand
+  (chicken-5
+    (components
+      (extension srfi.217.internal
+        (types-file)
+        (csc-options "-O3" "-d0")
+        (source-dependencies "srfi.217.internal.source.scm"))
+      (extension srfi-217
+        (types-file)
+        (component-dependencies srfi.217.internal)
+        (source-dependencies "exceptions.scm" "217-impl.scm"))))
+  (chicken-6
+    (components
+      (extension srfi.217.internal
+        (types-file)
+        (csc-options "-O3" "-d0")
+        (source-dependencies "srfi.217.internal.source.scm")
+        (source "srfi.217.internal.chicken-6.sld"))
+      (extension srfi-217
+        (types-file)
+        (component-dependencies srfi.217.internal)
+        (source "srfi-217.chicken-6.sld")
+        (source-dependencies "exceptions.scm" "217-impl.scm")))))
+
+ )

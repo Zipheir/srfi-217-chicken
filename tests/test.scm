@@ -5,11 +5,24 @@
         (chicken syntax)
         (srfi 217)
         (test)
-        test-generative
-        (srfi 1)
-        )
+        (srfi 1))
 
 ;;; Utility
+
+;;; phm -- broken replacement for test-generative
+
+(define current-test-generative-iterations
+  (make-parameter 100))
+
+(define-syntax test-generative
+  (syntax-rules ()
+    ((_ ((binding thunk) ...) body ...)
+     (let ((iterations (current-test-generative-iterations))
+           (binding thunk) ...)
+       (do ((i 0 (+ i 1)))
+           ((= i iterations))
+         (let ((binding (binding)) ...)
+           body ...))))))
 
 (define (init xs)
   (if (null? (cdr xs))
@@ -232,9 +245,9 @@
     (test 'z (iset-member (iset) 0 'z))
     (test 103 (iset-member pos-set 103 #f))
     (test 'z (iset-member pos-set 104 'z))
-    (test -103 (iset-member neg-set -103 #f))
+    (test -70 (iset-member neg-set -70 #f))
     (test 'z (iset-member neg-set 10 'z))
-    (test 1 (iset-member mixed-set 0 #f))
+    (test -1 (iset-member mixed-set -1 #f))
     (test 'z (iset-member mixed-set -200 'z))
     (test 30 (iset-member sparse-set 30 #f))
     (test 'z (iset-member sparse-set 39 'z))
@@ -320,7 +333,8 @@
                   (iset-contains? s* 128)
                   (iset-contains? s* -256))))
       ;; delete-all after adjoin
-      (test-equal iset=? s (iset-delete-all (iset-adjoin 1 2) '(1 2)))
+      (test-equal iset=? s (iset-delete-all (iset-adjoin s 1 2)
+                                            '(1 2)))
       )
     (test #t (raises-type-condition (iset-delete-all #t '())))
     (test #t (raises-type-condition (iset-delete-all (iset) 10.1)))
