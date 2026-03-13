@@ -31,8 +31,6 @@
   (branching-bit branch-branching-bit : fixnum)
   (left branch-left : trie)
   (right branch-right : trie))
-  ;(left branch-left : (or false (struct <leaf>) (struct <branch>)))
-  ;(right branch-right : (or false (struct <leaf>) (struct <branch>))))
 
 ;; The primary branch constructor creates a branch only if the subtrees
 ;; are non-empty.
