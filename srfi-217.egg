@@ -2,7 +2,7 @@
  (category data)
  (author "John Cowan and Wolfgang Corcoran-Mathe")
  (license "MIT")
- (version "0.2")
+ (version "0.3")
  (maintainer "Wolfgang Corcoran-Mathe")
  (dependencies srfi-1 srfi-143 typed-records)
  (test-dependencies test)
